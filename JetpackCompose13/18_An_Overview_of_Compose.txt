@@ -1,0 +1,123 @@
+18. An Overview of Compose
+==========================
+
+/*
+Now that Android Studio has been installed and the basics of the Kotlin programing language covered, it is time to start introducing Jetpack Compose.
+
+Jetpack Compose is an entirely new approach to developing apps for all of Google’s operating system platforms. The basic goals of Compose are to make app development easier, faster, and less prone to the types of bugs that typically appear when developing software projects. These elements have been combined with Compose-specific additions to Android Studio that allow Compose projects to be tested in near real-time using an interactive preview of the app during the development process.
+
+Many of the advantages of Compose originate from the fact that it is both declarative and data-driven, topics which will be explained in this chapter.
+
+The discussion in this chapter is intended as a high-level overview of Compose and does not cover the practical aspects of implementation within a project. Implementation and practical examples will be covered in detail in the remainder of the book.
+
+
+
+Теперь, когда установлена Android Studio и изучены основы языка программирования Kotlin, пришло время приступить к внедрению Jetpack Compose.
+
+Jetpack Compose - это совершенно новый подход к разработке приложений для всех платформ операционных систем Google. Основные цели Compose - сделать разработку приложений проще, быстрее и менее подверженной типам ошибок, которые обычно появляются при разработке программных проектов. Эти элементы были объединены с дополнениями для Android Studio, специфичными для Compose, которые позволяют тестировать проекты Compose практически в режиме реального времени, используя интерактивный предварительный просмотр приложения в процессе разработки.
+
+Многие преимущества Compose проистекают из того факта, что он является одновременно декларативным и управляемым данными, темы, которые будут объяснены в этой главе.
+
+Обсуждение в этой главе предназначено для общего обзора Compose и не охватывает практические аспекты реализации в рамках проекта. Реализация и практические примеры будут подробно рассмотрены в оставшейся части книги.
+*/
+
+
+
+18.1 Development before Compose
+-------------------------------
+
+/*
+To understand the meaning and advantages of the Compose declarative syntax, it helps to understand how user interface layouts were designed before the introduction of Compose. Previously, Android apps were still built entirely using Android Studio together with a collection of associated frameworks that make up the Android Development Kit.
+
+To aid in the design of the user interface layouts that make up the screens of an app, Android Studio includes a tool called the Layout Editor. The Layout Editor is a powerful tool that allows XML files to be created which contain the individual components that make up a screen of an app.
+
+The user interface layout of a screen is designed within the Layout Editor by dragging components (such as buttons, text, text fields, and sliders) from a widget palette to the desired location on the layout canvas. Selecting a component in a scene provides access to a range of property panels where the attributes of the components can be changed.
+
+The layout behavior of the screen (in other words how it reacts to different device screen sizes and changes to device orientation between portrait and landscape) is defined by configuring a range of constraints that dictate how each component is positioned and sized in relation to both the containing window and the other components in the layout.
+
+Finally, any components that need to respond to user events (such as a button tap or slider motion) are connected to methods in the app source code where the event is handled.
+
+At various points during this development process, it is necessary to compile and run the app on a simulator or device to test that everything is working as expected.
+
+
+
+Чтобы понять значение и преимущества декларативного синтаксиса Compose, полезно понять, как разрабатывались макеты пользовательского интерфейса до появления Compose. Ранее приложения для Android создавались полностью с использованием Android Studio вместе с набором связанных фреймворков, составляющих Android Development Kit.
+
+Чтобы помочь в разработке макетов пользовательского интерфейса, составляющих экраны приложения, Android Studio включает инструмент, называемый редактором макетов. Редактор макетов - это мощный инструмент, который позволяет создавать XML-файлы, содержащие отдельные компоненты, составляющие экран приложения.
+
+Макет пользовательского интерфейса экрана создается в редакторе макетов путем перетаскивания компонентов (таких как кнопки, текст, текстовые поля и ползунки) из палитры виджетов в нужное место на холсте макета. Выбор компонента в сцене предоставляет доступ к целому ряду панелей свойств, на которых можно изменять атрибуты компонентов.
+
+Поведение макета экрана (другими словами, как он реагирует на различные размеры экрана устройства и изменения ориентации устройства между книжной и альбомной) определяется путем настройки ряда ограничений, которые определяют расположение и размер каждого компонента по отношению как к содержащему его окну, так и к другим компонентам макета.
+
+Наконец, любые компоненты, которым необходимо реагировать на пользовательские события (например, нажатие кнопки или движение ползунка), подключаются к методам в исходном коде приложения, где обрабатывается событие.
+
+На различных этапах этого процесса разработки необходимо скомпилировать и запустить приложение на симуляторе или устройстве, чтобы проверить, что все работает должным образом.
+*/
+
+
+
+18.2 Compose declarative syntax
+-------------------------------
+
+/*
+Compose introduces a declarative syntax that provides an entirely different way of implementing user interface layouts and behavior from the Layout Editor approach. Instead of manually designing the intricate details of the layout and appearance of components that make up a scene, Compose allows the scenes to be described using a simple and intuitive syntax. In other words, Compose allows layouts to be created by declaring how the user interface should appear without having to worry about the complexity of how the layout is built.
+
+This essentially involves declaring the components to be included in the layout, stating the kind of layout manager in which they are to be contained (column, row, box, list, etc.), and using modifiers to set attributes such as the text on a button, the foreground color of a label, or the handler to be called in the event of a tap gesture. Having made these declarations, all the intricate and complicated details of how to position, constrain and render the layout are handled automatically by Compose. Compose declarations are structured hierarchically, which also makes it easy to create complex views by composing together small, re-usable custom sub-views.
+
+While a layout is being declared and tested, Android Studio provides a preview canvas that changes in real-time to reflect the appearance of the layout. Android Studio also includes an interactive preview mode which allows the app to be launched within the preview canvas and fully tested without the need to build and run on a simulator or device.
+
+Coverage of the Compose declaration syntax begins with the chapter entitled “Composable Functions Overview”.
+
+
+
+Compose вводит декларативный синтаксис, который обеспечивает совершенно иной способ реализации макетов пользовательского интерфейса и поведения по сравнению с подходом редактора макетов. Вместо ручного проектирования сложных деталей макета и внешнего вида компонентов, составляющих сцену, Compose позволяет описывать сцены, используя простой и интуитивно понятный синтаксис. Другими словами, Compose позволяет создавать макеты, объявляя, как должен выглядеть пользовательский интерфейс, не беспокоясь о сложности построения макета.
+
+По сути, это включает в себя объявление компонентов, которые будут включены в макет, указание типа менеджера макета, в котором они должны содержаться (столбец, строка, поле, список и т.д.), и использование модификаторов для установки таких атрибутов, как текст на кнопке, цвет переднего плана надписи, или обработчик, который будет вызван в случае жеста касания. Сделав эти объявления, Compose автоматически обрабатывает все запутанные детали того, как расположить, ограничить и отрисовать макет. Объявления Compose структурированы иерархически, что также упрощает создание сложных представлений путем объединения небольших пользовательских вложенных представлений, которые можно использовать повторно.
+
+Пока макет объявляется и тестируется, Android Studio предоставляет холст предварительного просмотра, который меняется в режиме реального времени, отражая внешний вид макета. Android Studio также включает интерактивный режим предварительного просмотра, который позволяет запускать приложение на панели предварительного просмотра и полностью тестировать его без необходимости создания и запуска на симуляторе или устройстве.
+
+Описание синтаксиса объявления Compose начинается с главы, озаглавленной “Обзор компонуемых функций”.
+*/
+
+
+
+
+18.3 Compose is data-driven
+---------------------------
+
+/*
+When we say that Compose is data-driven, this is not to say that it is no longer necessary to handle events generated by the user (in other words the interaction between the user and the app user interface). It is still necessary, for example, to know when the user taps a button or moves a slider and to react in some app-specific way. Being data-driven relates more to the relationship between the underlying app data and the user interface and logic of the app.
+
+Before the introduction of Compose, an Android app would contain code responsible for checking the current values of data within the app. If data was likely to change over time, code had to be written to ensure that the user interface always reflected the latest state of the data (perhaps by writing code to frequently check for changes to the data, or by providing a refresh option for the user to request a data update). Similar challenges arise when keeping the user interface state consistent and making sure issues like toggle button settings are stored appropriately. Requirements such as these can become increasingly complex when multiple areas of an app depend on the same data sources.
+
+Compose addresses this complexity by providing a system that is based on state. Data that is stored as state ensures that any changes to that data are automatically reflected in the user interface without the need to write any additional code to detect the change. Any user interface component that accesses a state is essentially subscribed to that state. When the state is changed anywhere in the app code, any subscriber components to that data will be destroyed and recreated to reflect the data change in a process called recomposition. This ensures that when any state on which the user interfaces is dependent changes, all components that rely on that data will automatically update to reflect the latest state. State and recomposition will be covered in the chapter entitled “An Overview of Compose State and Recomposition”.
+
+
+
+Когда мы говорим, что Compose управляется данными, это не означает, что больше нет необходимости обрабатывать события, генерируемые пользователем (другими словами, взаимодействие между пользователем и пользовательским интерфейсом приложения). По-прежнему необходимо, например, знать, когда пользователь нажимает на кнопку или перемещает ползунок, и реагировать определенным образом, специфичным для приложения. Управление данными в большей степени относится к взаимосвязи между базовыми данными приложения, пользовательским интерфейсом и логикой приложения.
+
+До появления Compose приложение для Android содержало бы код, ответственный за проверку текущих значений данных в приложении. Если данные, вероятно, будут меняться с течением времени, необходимо было написать код, гарантирующий, что пользовательский интерфейс всегда отражает последнее состояние данных (возможно, путем написания кода для частой проверки изменений в данных или путем предоставления возможности обновления для пользователя, чтобы запросить обновление данных). Аналогичные ситуации возникают при поддержании согласованности состояния пользовательского интерфейса и обеспечении уверенности в вопросах надлежащего хранения скажем, настройки кнопок переключения. Подобные требования могут становиться все более сложными, когда несколько областей приложения зависят от одних и тех же источников данных.
+
+Compose устраняет эту сложность, предоставляя систему, основанную на состоянии. Данные, сохраняемые как состояние, гарантируют, что любые изменения в этих данных автоматически отражаются в пользовательском интерфейсе без необходимости написания какого-либо дополнительного кода для обнаружения изменений. Любой компонент пользовательского интерфейса, который обращается к состоянию, по сути, подписан на это состояние. При изменении состояния в любом месте кода приложения любые компоненты-подписчики для этих данных будут уничтожены и созданы заново, чтобы отразить изменение данных в процессе, называемом перекомпозицией. Это гарантирует, что при изменении любого состояния, от которого зависят пользовательские интерфейсы, все компоненты, которые полагаются на эти данные, автоматически обновятся, чтобы отразить последнее состояние. Состояние и перекомпоновка будут рассмотрены в главе, озаглавленной “Обзор состояния компоновки и перекомпоновка”.
+*/
+
+
+
+18.4 Summary
+------------
+
+/*
+Jetpack introduces a different approach to app development than that offered by the Android Studio Layout Editor. Rather than directly implement the  way in which a user interface is to be rendered, Compose allows the user interface to be declared in descriptive terms and then does all the work of deciding the best way to perform the rendering when the app runs.
+
+Compose is also data-driven in that data changes drive the behavior and appearance of the app. This is achieved through states and recomposition.
+
+This chapter has provided a very high-level view of Jetpack Compose. The remainder of this book will explore Compose in greater depth.
+
+
+
+Jetpack представляет иной подход к разработке приложений, чем тот, который предлагается редактором макетов Android Studio. Вместо того чтобы напрямую реализовывать способ рендеринга пользовательского интерфейса, Compose позволяет объявить пользовательский интерфейс в описательных терминах, а затем выполняет всю работу по определению наилучшего способа выполнения рендеринга при запуске приложения.
+
+Compose также управляется данными в том смысле, что изменения данных определяют поведение и внешний вид приложения. Это достигается с помощью состояний и перекомпоновки.
+
+В этой главе представлен очень подробный обзор Jetpack Compose. В оставшейся части этой книги Compose будет рассмотрен более подробно.
+*/
