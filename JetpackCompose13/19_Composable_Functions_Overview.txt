@@ -1,0 +1,302 @@
+19. Composable Functions Overview
+=================================
+
+/*
+Composable functions are the building blocks used to create user interfaces for Android apps when developing with Jetpack Compose. In the ComposeDemo project created earlier in the book, we made use of both the built-in compose functions provided with Compose and also created our own functions. In this chapter, we will explore composable functions in more detail, including topics such as stateful and stateless functions, function syntax, and the difference between foundation and material composables.
+
+
+Компонуемые функции - это строительные блоки, используемые для создания пользовательских интерфейсов для приложений Android при разработке с помощью Jetpack Compose. В демонстрационном проекте Compose, созданном ранее в книге, мы использовали как встроенные функции compose, предоставляемые Compose, так и создали наши собственные функции. В этой главе мы более подробно рассмотрим компонуемые функции, включая такие темы, как функции с сохранением состояния и без него, синтаксис функций и разница между компонуемыми элементами foundation и material.
+*/
+
+
+
+19.1 What is a composable function?
+-----------------------------------
+
+/*
+Composable functions (also referred to as composables or components) are special Kotlin functions that are used to create user interfaces when working with Compose. A composable function is differentiated from regular Kotlin functions in code using the @Composable annotation.
+
+When a composable is called, it is typically passed some data and a set of properties that define how the corresponding section of the user interface is to behave and appear when rendered to the user in the running app. In essence, composable functions transform data into user interface elements. Composables do not return values in the traditional sense of the Kotlin function, but instead, emit user interface elements to the Compose runtime system for rendering.
+
+Composable functions can call other composables to create a hierarchy of components as demonstrated in the ComposeDemo project. While a composable function may also call standard Kotlin functions, standard functions may not call composable functions.
+
+A typical Compose-based user interface will be comprised of a combination of built-in and custom-built composables.
+
+
+Компонуемые функции (также называемые компонуемыми объектами или компонентами) - это специальные функции Kotlin, которые используются для создания пользовательских интерфейсов при работе с Compose. Компонуемая функция отличается от обычных функций Kotlin в коде с помощью аннотации @Composable.
+
+Когда вызывается composable, ему обычно передаются некоторые данные и набор свойств, которые определяют, как соответствующий раздел пользовательского интерфейса должен вести себя и отрисовываться при отображении пользователю в запущенном приложении. По сути, composable функции преобразуют данные в элементы пользовательского интерфейса. Компонуемые элементы не возвращают значения в традиционном смысле функции Kotlin, а вместо этого передают элементы пользовательского интерфейса в систему Compose runtime для рендеринга.
+
+Компонуемые функции могут вызывать другие компонуемые элементы для создания иерархии компонентов, как показано в проекте ComposeDemo. В то время как компонуемая функция может также вызывать стандартные функции Kotlin, стандартные функции не могут вызывать компонуемые функции.
+
+Типичный пользовательский интерфейс на основе Compose будет состоять из комбинации встроенных и создаваемых на заказ компонентов.
+*/
+
+
+
+19.2 Stateful vs. stateless composables
+---------------------------------------
+
+/*
+Composable functions are categorized as being either stateful or stateless. State, in the context of Compose, is defined as being any value that can  change during the execution of an app. For example, a slider position value, the string entered into a text field, or the current setting of a check box are all forms of state.
+
+As we saw in the ComposeDemo project, a composable function can store a state value which defines in some way how the composable function, or those that it calls appear or behave. This is achieved using the remember keyword and the mutableStateOf function. Our DemoScreen composable, for example, stored the current slider position as state using this technique:
+
+
+Компонуемые функции классифицируются как функции с сохранением состояния или без сохранения состояния. Состояние в контексте Compose определяется как любое значение, которое может изменяться во время выполнения приложения. Например, значение положения ползунка, строка, введенная в текстовое поле, или текущая установка флажка - все это формы состояния.
+
+Как мы видели в демонстрационном проекте Compose, компонуемая функция может хранить значение состояния, которое некоторым образом определяет, как выглядит или ведет себя компонуемая функция или те, которые она вызывает. Это достигается с помощью ключевого слова remember и изменяемого состояния функции. Например, наш демонстрационный экран composable сохранил текущее положение ползунка в качестве состояния, используя этот метод:
+*/
+
+@Composable
+fun DemoScreen() {
+  var sliderPosition by remember { mutableStateOf(20f) }
+  .
+  .
+}
+
+/*
+Because the DemoScreen contains state, it is considered to be a stateful composable. Now consider the DemoSlider composable which reads as follows:
+
+Поскольку демонстрационный экран содержит состояние, он считается компонуемым с учетом состояния. Теперь рассмотрим компонуемый демонстрационный проект DemoSlider, который выглядит следующим образом:
+*/
+
+@Composable
+fun DemoSlider(sliderPosition: Float, onPositionChange : (Float) -> Unit ) {
+  Slider(
+    modifier = Modifier.padding(10.dp),
+    valueRange = 20f..40f,
+    value = sliderPosition,
+    onValueChange = onPositionChange
+  )
+}
+
+/*
+Although this composable is passed and makes use of the state value stored by the DemoScreen, it does not itself store any state value. DemoSlider is, therefore, considered to be a stateless composable function. The topic of state will be covered in greater detail in the chapter entitled “An Overviewof Compose State and Recomposition”.
+
+Хотя эта компонуемая функция передается и использует значение состояния, сохраненное функцией DemoScreen, сама по себе она не хранит никакого значения состояния. Таким образом, DemoSlider считается компонуемой функцией без сохранения состояния. Тема состояния будет рассмотрена более подробно в главе, озаглавленной “Обзор состояния компоновки и рекомпозиции”.
+*/
+
+
+
+19.3 Composable function syntax
+-------------------------------
+
+/*
+Composable functions, as we already know, are declared using the @Composable annotation and are written in much the same way as a standard Kotlin function. We can, for example, declare a composable function that does nothing as follows:
+
+Компонуемые функции, как мы уже знаем, объявляются с использованием аннотации @Composable и записываются почти так же, как стандартная функция Kotlin. Мы можем, например, объявить компонуемую функцию, которая ничего не делает, следующим образом:
+*/
+
+@Composable
+fun MyFunction() {
+}
+
+/*
+We can also call other composables from within the function:
+
+Мы также можем вызывать другие компонуемые объекты из функции:
+*/
+
+@Composable
+fun MyFunction() {
+  Text("Hello")
+}
+
+/*
+Composables may also be implemented to accept parameters. The following function accepts text, font weight, and color parameters and passes them to the built-in Text composable. The fragment also includes a preview composable to demonstrate how the CustomText function might be called:
+
+Компонуемые файлы также могут быть реализованы для приема параметров. Следующая функция принимает параметры текста, веса шрифта и цвета и передает их встроенному компонуемому элементу Text. Фрагмент также включает предварительный компонуемый просмотр, демонстрирующий, как может быть вызвана пользовательская функция CustomText:
+*/
+
+@Composable
+fun CustomText(text: String, fontWeight: FontWeight, color: Color) {
+  Text(text = text, fontWeight = fontWeight, color = color)
+}
+
+@Preview(showBackground = true)
+@Composable
+fun GreetingPreview() {
+  CustomText(
+    text = "Hello Compose", 
+    fontWeight = FontWeight.Bold,
+    color = Color.Magenta
+  )
+}
+
+/*
+When previewed, magenta-colored bold text reading “Hello Compose” will be rendered in the preview panel. Just about any Kotlin logic code may be included in the body of a composable function. The following composable, for example, displays different text within a Column depending on the settingof a built-in Switch composable:
+
+При предварительном просмотре на панели предварительного просмотра будет отображен выделенный жирным шрифтом текст “Hello Compose” цвет Magenta. Практически любой логический код Kotlin может быть включен в тело компонуемой функции. Например, следующая composable-функция отображает различный текст внутри столбца в зависимости от настройки встроенного composable-элемента Switch:
+*/
+
+@Composable
+fun CustomSwitch() {
+  val checked = remember { mutableStateOf(true) }
+  Column {
+    Switch(
+      checked = checked.value,
+      onCheckedChange = { checked.value = it }
+    )
+    if (checked.value) {
+      Text("Switch is On")
+    } else {
+      Text("Switch is Off")
+    }
+  }
+}
+
+/*
+In the above example, we have declared a state value named checked initialized to true and then constructed a Column containing a Switch composable. The state of the Switch is based on the value of checked and a lambda assigned as the onCheckedChanged event handler. This lambda sets the checked state to the current Switch setting. Finally, an if statement is used to decide which of two Text composables are displayed depending on the current value of the checked state. When run, the text displayed will alternate between “Switch is on” and “Switch is off ”:
+
+В приведенном выше примере мы объявили значение состояния с именем checked, инициализированное значением true, а затем создали Столбец, содержащий компонуемый Переключатель. Состояние переключателя основано на значении checked и лямбде, назначенной в качестве обработчика события onCheckedChanged. Эта лямбда-функция устанавливает для проверяемого состояния текущее значение параметра Switch. Наконец, оператор if используется для определения того, какой из двух составных текстов отображается в зависимости от текущего значения проверяемого состояния. При запуске отображаемый текст будет чередоваться между “Переключатель включен” и “Переключатель выключен”:
+*/
+
+Figure 19-1
+
+/*
+Similarly, we could use looping syntax to iterate through the items in a list and display them in a Column separated by instances of the Divider composable:
+
+Аналогично, мы могли бы использовать циклический синтаксис для перебора элементов в списке и отображения их в столбце, разделенном экземплярами компонуемого разделителя:
+*/
+
+@Composable
+fun CustomList(items: List<String>) {
+  Column {
+    for (item in items) {
+      Text(item)
+      Divider(color = Color.Black)
+    }
+  }
+}
+
+/*
+The following composable could be used to preview the above function:
+
+Следующий компонуемый элемент можно было бы использовать для предварительного просмотра вышеуказанной функции:
+*/
+
+@Preview(showBackground = true)
+@Composable
+fun GreetingPreview() {
+  MyApplicationTheme {
+    CustomList(
+      listOf("One", "Two", "Three", "Four", "Five", "Six")
+    )
+  }
+}
+
+/*
+Once built and refreshed, the composable will appear in the Preview panel as shown in Figure 19-2 below:
+
+После создания и обновления компонуемый объект появится на панели предварительного просмотра, как показано на рисунке 19-2 ниже:
+*/
+
+Figure 19-2
+
+
+
+19.4 Foundation and Material composables
+----------------------------------------
+
+/*
+When developing apps with Compose we do so using a mixture of our own composable functions (for example the CustomText and CustomList composables created earlier in the chapter) combined with a set of ready to use components provided by the Compose development kit (such as the Text, Button, Column and Slider composables).
+
+The composables bundled with Compose fall into three categories, referred to as Layout, Foundation, and Material Design components.
+
+Layout components provide a way to define both how components are positioned on the screen, and how those components behave in relation to each other. The following are all layout composables:
+• Box
+• BoxWithConstraints
+• Column
+• ConstraintLayout
+• Row
+
+Foundation components are a set of minimal components that provide basic user interface functionality. While these components do not, by default, impose a specific style or theme, they can be customized to provide any look and behavior you need for your app. The following lists the set of Foundation components:
+• BaseTextField
+• Canvas
+• Image
+• LazyColumn
+• LazyRow
+• Shape
+• Text
+
+The Material Design components, on the other hand, have been designed so that they match Google’s Material theme guidelines and include the following composables:
+• AlertDialog
+• Button
+• Card
+• CircularProgressIndicator
+• DropdownMenu
+• Checkbox
+• FloatingActionButton
+• LinearProgressIndicator
+• ModalDrawer
+• RadioButton
+• Scaffold
+• Slider
+• Snackbar
+• Switch
+• TextField
+• TopAppBar
+• BottomNavigation
+
+When choosing components, it is important to note that the Foundation and Material Design components are not mutually exclusive. You will inevitably use components from both categories in your design since the Material Design category has components for which there is no Foundation equivalent and vice versa.
+
+
+
+При разработке приложений с помощью Compose мы используем смесь наших собственных компонуемых функций (например, компонуемые элементы CustomText и CustomList, созданные ранее в этой главе) в сочетании с набором готовых к использованию компонентов, предоставляемых Compose development kit (таких как составные элементы текста, кнопки, столбца и слайдера).
+
+Компонуемые элементы, поставляемые в комплекте с Compose, делятся на три категории, называемые компонентами макета, основы и Material Design.
+
+Компоненты макета предоставляют способ определить как расположение компонентов на экране, так и поведение этих компонентов по отношению друг к другу. Ниже приведены все составные элементы макета:
+• Box
+• BoxWithConstraints
+• Column
+• ConstraintLayout
+• Row
+
+Компоненты Foundation представляют собой набор минимальных компонентов, обеспечивающих базовую функциональность пользовательского интерфейса. Хотя эти компоненты по умолчанию не навязывают определенный стиль или тему, их можно настроить таким образом, чтобы обеспечить любой внешний вид и поведение, необходимые для вашего приложения. Ниже перечислен набор компонентов Foundation:
+• BaseTextField
+• Canvas
+• Image
+• LazyColumn
+• LazyRow
+• Shape
+• Text
+
+Компоненты Material Design, с другой стороны, были разработаны таким образом, чтобы они соответствовали рекомендациям Google по тематике материалов и включали следующие компонуемые элементы:
+• AlertDialog
+• Button
+• Card
+• CircularProgressIndicator
+• DropdownMenu
+• Checkbox
+• FloatingActionButton
+• LinearProgressIndicator
+• ModalDrawer
+• RadioButton
+• Scaffold
+• Slider
+• Snackbar
+• Switch
+• TextField
+• TopAppBar
+• BottomNavigation
+
+При выборе компонентов важно учитывать, что компоненты Foundation и Material Design не являются взаимоисключающими. Вы неизбежно будете использовать компоненты из обеих категорий в своем дизайне, поскольку в категории Material Design есть компоненты, для которых нет эквивалента Foundation, и наоборот.
+*/
+
+
+
+19.5 Summary
+------------
+
+/*
+In this chapter, we have looked at composable functions and explored how they are used to construct Android-based user interfaces. Composable functions are declared using the @Composable annotation and use the same syntax as standard Kotlin functions, including the passing and handling of parameters. Unlike standard Kotlin functions, composable functions do not return values. Instead, they emit user interface units to be rendered by the Compose runtime. A composable function can be either stateful or stateless depending on whether the function stores a state value. The built-in composables are categorized as either Layout, Foundation, or Material Design components. The Material Design components conform with the Material style and theme guidelines provided by Google to encourage consistent UI design.
+
+One type of composable we have not yet introduced is the Slot API composable, a topic that will be covered later in the chapter entitled “An Overview of Compose Slot APIs”.
+
+
+В этой главе мы рассмотрели компонуемые функции и исследовали, как они используются для создания пользовательских интерфейсов на базе Android. Компонуемые функции объявляются с использованием аннотации @Composable и используют тот же синтаксис, что и стандартные функции Kotlin, включая передачу параметров и обработку с ними. В отличие от стандартных функций Kotlin, компонуемые функции не возвращают значения. Вместо этого они генерируют элементы пользовательского интерфейса, которые будут отображаться средой выполнения Compose. Компонуемая функция может быть либо с сохранением состояния, либо без сохранения состояния в зависимости от того, сохраняет ли функция значение состояния. Встроенные компонуемые элементы классифицируются как компоненты Layout, Foundation или Material Design. Компоненты Material Design соответствуют рекомендациям по стилю и тематике материалов, предоставленным Google для обеспечения единообразия дизайна пользовательского интерфейса.
+
+Один из типов composable, который мы еще не представили, - это Slot API composable, тема, которая будет рассмотрена позже в главе, озаглавленной “Обзор Compose Slot API”.
+*/
