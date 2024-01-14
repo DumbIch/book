@@ -1,0 +1,338 @@
+21. An Introduction to Composition Local
+========================================
+
+/*
+We already know from previous chapters that user interfaces are built in Compose by constructing hierarchies of composable functions. We also know that Compose is state-driven and that state should generally be declared in the highest possible node of the composable tree (a concept referred to as state hoisting) and passed down through the hierarchy to the descendant composables where it is needed. While this works well for most situations, it can become cumbersome if the state needs to be passed down through multiple levels within the hierarchy. A solution to this problem exists in the form of CompositionLocal, which is the subject of this chapter.
+
+Из предыдущих глав мы уже знаем, что пользовательские интерфейсы создаются в Compose путем построения иерархий компонуемых функций. Мы также знаем, что Compose управляется состоянием и что состояние, как правило, должно быть объявлено в самом высоком возможном узле компонуемого дерева (концепция, называемая подъемом состояния) и передаваться вниз по иерархии к компонуемым потомкам, где это необходимо. Хотя это хорошо работает в большинстве ситуаций, это может стать громоздким, если состояние необходимо передавать вниз по нескольким уровням иерархии. Решение этой проблемы существует в виде CompositionLocal, который является предметом этой главы.
+*/
+
+
+
+21.1 Understanding CompositionLocal
+-----------------------------------
+
+/*
+In simple terms, CompositionLocal provides a way to make state declared higher in the composable hierarchy tree available to functions lower in the tree without having to pass it through every composable between the point where it is declared and the function where it is used. Consider, for example, the following hierarchy diagram:
+
+Проще говоря, CompositionLocal предоставляет способ сделать состояние, объявленное выше в дереве компонуемой иерархии, доступным для функций, расположенных ниже в дереве, без необходимости передавать его через каждый компонуемый объект между точкой, где он объявлен, и функцией, где он используется. Рассмотрим, например, следующую иерархическую диаграмму:
+*/
+
+Figure 21-1
+
+/*
+In the hierarchy, a state named colorState is declared in Composable1 but is only used in Composable8. Although the state is not needed in either Composable3 or Composable5, colorState still needs to be passed down through those functions to reach Composable8. The deeper the tree becomes, the more levels through which the state needs to be passed to reach the function where it is used.
+
+A solution to this problem is to use CompositionLocal. CompositionLocal allows us to declare the data at the highest necessary node in the tree and then access it in descendants without having to pass it through the intervening children as shown in Figure 21-2:
+
+
+В иерархии состояние с именем colorState объявлено в Composable1, но используется только в Composable8. Хотя состояние не требуется ни в Composable3, ни в Composable5, состояние colorState все равно должно передаваться через эти функции, чтобы достичь Composable8. Чем глубже становится дерево, тем больше уровней, через которые необходимо пройти состоянию, чтобы достичь функции, в которой оно используется.
+
+Решением этой проблемы является использование CompositionLocal. CompositionLocal позволяет нам объявить данные в самом высоком необходимом узле дерева и затем получить к ним доступ в потомках без необходимости передавать их через промежуточные дочерние элементы, как показано на рисунке 21-2:
+*/
+
+Figure 21-2
+
+/*
+CompositionLocal has the added advantage of only making the data available to the tree branch below the point at which it is assigned a value. In other words, if the state were assigned a value when calling composable3 it would be accessible within composable numbers 3, 5, 7, and 8, but not to composables 1, 2, 4, or 6. This allows state to be kept local to specific branches of the composable tree and for different sub-branches to have different values assigned to the same CompositionLocal state. So Composable5 could, for example, have a different color assigned to colorState from that set when Composable7 is called.
+
+CompositionLocal имеет дополнительное преимущество в том, что делает данные доступными только для ветви дерева ниже точки, в которой им присвоено значение. Другими словами, если бы состоянию было присвоено значение при вызове composable3, оно было бы доступно в пределах composables 3, 5, 7 и 8, но не для composables 1, 2, 4 или 6. Это позволяет сохранять состояние локальным для определенных ветвей компонуемого дерева и для разных под-веток назначать разные значения одному и тому же локальному состоянию CompositionLocal. Таким образом, Composable5 может, например, иметь цвет, отличный от того, который был присвоен colorState при вызове Composable7.
+*/
+
+
+
+21.2 Using CompositionLocal
+---------------------------
+
+/*
+Declaring state using CompositionLocal starts with the creation of a ProvidableCompositionLocal instance which can be obtained via a call to either the compositionLocalOf() or staticCompositionLocalOf() function. In each case, the function accepts a lambda defining a default value to be assigned to the state in the absence of a specific assignment, for example:
+
+Объявление состояния с использованием CompositionLocal начинается с создания экземпляра ProvidableCompositionLocal, который может быть получен с помощью вызова функции compositionLocalOf() или staticCompositionLocalOf(). В каждом случае функция принимает лямбду, определяющую значение по умолчанию, которое будет присвоено состоянию в отсутствие конкретного присвоения, например:
+*/
+
+val LocalColor = compositionLocalOf { Color.Red }
+val LocalColor = staticCompositionLocalOf { Color.Red }
+
+/*
+The staticCompositionLocalOf() function is recommended for storing state values that are unlikely to change very often. This is because any changes to the state value will cause the entire tree beneath where the value is assigned to be recomposed. The compositionLocalOf() function, on the other hand, will only cause recomposition to be performed on composables where the current state is accessed. This function should be used when dealing with states that change frequently.
+
+The next step is to assign a value to the ProvidableCompositionLocal instance and wrap the call to the immediate descendant child composable in a CompositionLocalProvider call:
+
+
+Функция staticCompositionLocalOf() рекомендуется для хранения значений состояния, которые вряд ли будут меняться очень часто. Это связано с тем, что любые изменения значения состояния приведут к перекомпоновке всего дерева под тем местом, где присвоено значение. Функция compositionLocalOf(), с другой стороны, приведет к выполнению рекомпозиции только для составных объектов, в которых осуществляется доступ к текущему состоянию. Эту функцию следует использовать при работе с состояниями, которые часто меняются.
+
+Следующим шагом является присвоение значения экземпляру ProvidableCompositionLocal и оборачивание вызова к непосредственному потомку компонуемого элемента в вызов CompositionLocalProvider:
+*/
+
+val color = Color.Blue
+CompositionLocalProvider(LocalColor provides color) {
+  Composable5()
+}
+
+/*
+Any descendants of Composition5 will now be able to access the CompositionLocal state via the current property of the ProviderCompositionLocal instance, for example:
+
+Любые потомки Composition5 теперь смогут получить доступ к состоянию CompositionLocal через текущее свойство экземпляра ProviderCompositionLocal, например:
+*/
+
+val background = LocalColor.current
+
+/*
+In the rest of this chapter, we will build a project that mirrors the hierarchy illustrated in Figure 21-1 to show CompositionLocal in action.
+
+В оставшейся части этой главы мы создадим проект, который отражает иерархию, показанную на рисунке 21-1, чтобы показать CompositionLocal в действии.
+*/
+
+
+
+21.3 Creating the CompLocalDemo project
+---------------------------------------
+
+/*
+Launch Android Studio and create a new Empty Activity project named CompLocalDemo. Specify com.example.complocaldemo as the package name and select a minimum API level of API 26: Android 8.0 (Oreo).
+
+Within the MainActivity.kt file, delete the Greeting function and add a new empty composable named Composable1:
+
+
+Запустите Android Studio и создайте новый пустой проект Empty Activity с именем CompLocalDemo. Укажите comp.example.complocaldemo в качестве имени пакета и выберите минимальный уровень API API 26: Android 8.0 (Oreo).
+
+В файле MainActivity.kt удалите функцию Greeting и добавьте новый пустой компонуемый элемент с именем Composable1:
+*/
+
+@Composable
+fun Composable1() {
+}
+
+/*
+Next, edit the OnCreate() method and GreetingPreview function to call Composable1 instead of Greeting.
+
+Затем отредактируйте метод onCreate() и функцию GreetingPreview, чтобы вызвать Composable1 вместо Greeting.
+*/
+
+
+
+21.4 Designing the layout
+-------------------------
+
+/*
+Within the MainActivity.kt file, implement the composable hierarchy as follows:
+
+В файле MainActivity.kt реализуйте иерархию компонуемых элементов следующим образом:
+*/
+
+.
+.
+import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Column
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.ui.graphics.Color
+.
+.
+@Composable
+fun Composable1() {
+  Column {
+    Composable2()
+    Composable3()
+  }
+}
+
+@Composable
+fun Composable2() {
+  Composable4()
+}
+
+@Composable
+fun Composable3() {
+  Composable5()
+}
+
+@Composable
+fun Composable4() {
+  Composable6()
+}
+
+@Composable
+fun Composable5() {
+  Composable7()
+  Composable8()
+}
+
+@Composable
+fun Composable6() {
+  Text("Composable 6")
+}
+
+@Composable
+  fun Composable7() {
+}
+
+@Composable
+fun Composable8() {
+  Text("Composable 8")
+}
+
+
+
+21.5 Adding the CompositionLocal state
+--------------------------------------
+
+/*
+The objective for this project is to declare a color state that can be changed depending on whether the device is in light or dark mode, and use that to control the background color of the text component in Composable8. Since this value will not change regularly, we can use the staticCompositionLocalOf() function. Remaining within the MainActivity.kt file, add the following line above the Composable1 declaration:
+
+Цель этого проекта - объявить цветовое состояние, которое может быть изменено в зависимости от того, находится ли устройство в светлом или темном режиме, и использовать его для управления цветом фона текстового компонента в Composable8. Поскольку это значение не будет меняться регулярно, мы можем использовать функцию staticCompositionLocalOf(). Оставаясь в файле MainActivity.kt, добавьте следующую строку над объявлением Composable1:
+*/
+
+.
+.
+val LocalColor = staticCompositionLocalOf { Color(0xFFffdbcf) }
+@Composable
+fun Composable1() {
+  Column {
+.
+.
+
+/*
+Next, a call to isSystemInDarkTheme() needs to be added, and the result used to assign a different color to the LocalColor state. We also need to call Composable3 from within the context of the CompositionLocal provider:
+
+Далее необходимо добавить вызов isSystemInDarkTheme(), а результат использовать для присвоения другого цвета состоянию LocalColor. Нам также нужно вызвать Composable3 из контекста поставщика CompositionLocal:
+*/
+
+@Composable
+fun Composable1() {
+  val color = if (isSystemInDarkTheme()) {
+    Color(0xFFa08d87)
+  } else {
+    Color(0xFFffdbcf)
+  }
+  Column {
+    Composable2()
+    CompositionLocalProvider(LocalColor provides color) {
+      Composable3()
+    }
+  }
+}
+
+
+
+21.6 Accessing the CompositionLocal state
+-----------------------------------------
+
+/*
+The final task before testing the code is to assign the color state to the Text component in Composable8 as follows:
+
+Последней задачей перед тестированием кода является присвоение состояния цвета текстовому компоненту в Composable8 следующим образом:
+*/
+
+@Composable
+fun Composable8() {
+  Text("Composable 8", modifier = Modifier.background(LocalColor.current))
+}
+
+
+
+21.7 Testing the design
+-----------------------
+
+/*
+To test the activity code in both light and dark modes, add a new Preview composable to MainActivity.kt with uiMode set to UI_NIGHT_MODE_YES:
+
+Чтобы протестировать код активити как в светлом, так и в темном режимах, добавьте новый компонуемый предварительный просмотр в MainActivity.kt с режимом uiMode, установленным на UI_NIGHT_MODE_YES:
+*/
+
+.
+.
+import android.content.res.Configuration.UI_MODE_NIGHT_YES
+.
+.
+@Preview(showBackground = true, uiMode = UI_MODE_NIGHT_YES)
+@Composable
+fun DarkPreview() {
+  CompLocalDemoTheme {
+    Composable1()
+  }
+}
+
+/*
+After refreshing the Preview panel, both the default and dark preview should appear, each using a different color as the background for the Text component in Composable8:
+
+После обновления панели предварительного просмотра должны появиться как предварительный просмотр по умолчанию, так и темный предварительный просмотр, каждый из которых использует другой цвет в качестве фона для текстового компонента в Composable8:
+*/
+
+Figure 21-3
+
+/*
+We can also modify the code so that composables 3, 5, 7, and 8 have different color settings. All this requires is calling each composable from within a CompositionLocalProvider with a different color assignment:
+
+Мы также можем изменить код таким образом, чтобы компонуемые элементы 3, 5, 7 и 8 имели разные настройки цвета. Все, что для этого требуется - это вызвать каждый крмпонуемый элемент из CompositionLocalProvider с другим назначением цвета:
+*/
+
+.
+.
+@Composable
+fun Composable3() {
+  Text("Composable 3", modifier = Modifier.background(LocalColor.current))
+  CompositionLocalProvider(LocalColor provides Color.Red) {
+    Composable5()
+  }
+}
+.
+.
+@Composable
+fun Composable5() {
+  Text("Composable 5", modifier = Modifier.background(LocalColor.current))
+  CompositionLocalProvider(LocalColor provides Color.Green) {
+    Composable7()
+  }
+  CompositionLocalProvider(LocalColor provides Color.Yellow) {
+    Composable8()
+  }
+}
+.
+.
+
+@Composable
+fun Composable7() {
+  Text("Composable 7", modifier = Modifier.background(LocalColor.current))
+}
+.
+.
+
+/*
+Now when the Preview panel is refreshed, all four components will have a different color, all based on the same LocalColor state:
+
+Теперь, когда панель предварительного просмотра обновлена, все четыре компонента будут иметь другой цвет, основанный на одном и том же состоянии LocalColor:
+*/
+
+Figure 21-4
+
+/*
+As one final step, try to access the LocalColor state from Composable6:
+
+В качестве последнего шага попробуйте получить доступ к состоянию LocalColor из Composable6:
+*/
+
+@Composable
+fun Composable6() {
+  Text("Composable 6", modifier = Modifier.background(LocalColor.current))
+}
+
+/*
+On refreshing the preview the Text component for Compsoable6 will appear using the default color assigned to LocalColor. This is because Composable6 is in a different branch of the tree and does not have access to the current LocalColor setting.
+
+При обновлении предварительного просмотра компонент Text для Compsoable6 отобразится с использованием цвета по умолчанию, назначенного LocalColor. Это связано с тем, что Composable6 находится в другой ветви дерева и не имеет доступа к текущей настройке LocalColor.
+*/
+
+
+
+21.8 Summary
+------------
+
+/*
+This chapter has introduced CompositionLocal and demonstrated how it can be used to declare state that is accessible to composables lower down in the layout hierarchy without having to be passed from one child to another. State declared in this way is local to the branch of the hierarchy tree in which a value is assigned.
+
+В этой главе был представлен CompositionLocal и продемонстрировано, как его можно использовать для объявления состояния, доступного для компонуемых элементов, расположенных ниже в иерархии компоновки, без необходимости передачи состояния по цепочке от одного дочернего элемента к другому. Состояние, объявленное таким образом, является локальным для ветви дерева иерархии, в которой присвоено значение.
+*/
+
+
