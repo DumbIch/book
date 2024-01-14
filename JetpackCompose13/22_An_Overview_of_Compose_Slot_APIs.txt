@@ -1,0 +1,190 @@
+22. An Overview of Compose Slot APIs
+====================================
+
+/*
+Now that we have a better idea of what composable functions are and how to create them, it is time to explore composables that provide a slot API. In this chapter, we will explain what a slot API is, what it is used for and how you can include slots in your own composable functions. We will also explore some of the built-in composables that provide slot API support.
+
+Теперь, когда у нас есть лучшее представление о том, что такое компонуемые функции и как их создавать, пришло время изучить компонуемые элементы, предоставляющие slot API. В этой главе мы объясним, что такое slot API, для чего он используется и как вы можете включать слоты в свои собственные компонуемые функции. Мы также рассмотрим некоторые встроенные компонуемые элементы, которые обеспечивают поддержку slot API.
+*/
+
+
+
+22.1 Understanding slot APIs
+----------------------------
+
+/*
+As we already know, composable functions can include calls to one or more other composable functions. This usually means that the content of a composable is predefined in terms of which other composables it calls and, therefore, the content it displays. Consider the following function consisting of a Column and three Text components:
+
+Как мы уже знаем, компонуемые функции могут включать вызовы одной или нескольких других компонуемых функций. Обычно это означает, что содержимое компонуемого элемента предопределено в терминах того, какие именно компонуемые элементы он вызывает, и, следовательно, содержимого, которое он отображает. Рассмотрим следующую функцию, состоящую из столбца и трех текстовых компонентов:
+*/
+
+@Composable
+fun SlotDemo() {
+  Column {
+    Text("Top Text")
+    Text("Middle Text")
+    Text("Bottom Text")
+  }
+}
+
+/*
+The function could be modified to pass in parameters that specify the text to be displayed or even the color and font size of that text. Regardless of the changes we make, however, the function is still restricted to displaying a column containing three Text components:
+
+Функцию можно изменить, передав параметры, определяющие отображаемый текст или даже цвет и размер шрифта этого текста. Однако, независимо от внесенных нами изменений, функция по-прежнему ограничена отображением столбца, содержащего три текстовых компонента:
+*/
+
+Figure 22-1
+
+/*
+Suppose, however, that we need to display three items in a column, but do not know what composable will take up the middle position until just before the composable is called. In its current form, there is no way to display anything but the declared Text component in the middle position. The solution to this problem is to open up the middle composable as a slot into which any other composable may be placed when the function is called. This is referred to as providing a slot API for the composable. API is an abbreviation of Application Programming Interface and, in this context, implies that we are adding a programming interface to our composable that allows the caller to specify the composable to appear within a slot. In fact, a composable function can provide multiple slots to the caller. In the above function, for example, all of the Text components could be declared as slots if required.
+
+Предположим, однако, что нам нужно отобразить три элемента в столбце, но мы не знаем, какой компонуемый элемент займет среднюю позицию, тип будет определен непосредственно перед вызовом компонуемого элемента. Сейчас в нашем коде нет способа отобразить что-либо, кроме объявленного текстового компонента в средней позиции. Решение этой проблемы состоит в том, чтобы открыть средний компонуемый объект в качестве слота, в который может быть помещен любой другой компонуемый объект при вызове функции. Это называется предоставлением API слота для компонуемого объекта. API - это аббревиатура от Application Programming Interface и в данном контексте подразумевает, что мы добавляем программный интерфейс к нашему компонуемому объекту, который позволяет вызывающей стороне указывать, что компонуемый объект должен отображаться в слоте. Фактически, компонуемая функция может предоставить вызывающей стороне несколько слотов. Например, в приведенной выше функции все текстовые компоненты могут быть объявлены как слоты, если требуется.
+*/
+
+
+
+22.2 Declaring a slot API
+-------------------------
+
+/*
+It can be helpful to think of a slot API composable as a user interface template in which one or more elements are left blank. These missing pieces are then passed as parameters when the composable is called and included when the user interface is rendered by the Compose runtime system.
+
+The first step in adding slots to a composable is to specify that it accepts a slot as a parameter. This is essentially a case of declaring that a composable accepts other composables as parameters. In the case of our example SlotDemo composable, we would modify thefunction signature as follows:
+
+
+Компонуемый slot API можно представить как шаблон пользовательского интерфейса, в котором один или несколько элементов оставлены пустыми. Эти недостающие фрагменты затем передаются в качестве параметров при вызове компонуемого слота и включаются при визуализации пользовательского интерфейса системой Compose runtime.
+
+Первым шагом при добавлении слотов в компонуемый объект является указание того, что он принимает слот в качестве параметра. По сути, это случай объявления того, что компонуемый объект принимает другие компонуемые объекты в качестве параметров. В случае нашего примера компонуемой функции SlotDemo мы бы изменили сигнатуру функции следующим образом:
+*/
+
+@Composable
+fun SlotDemo(middleContent: @Composable () -> Unit) {
+.
+.
+
+/*
+When the SlotDemo composable is called, it will now need to be passed a composable function. Note that the function is declared as returning a Unit object. Unit is a Kotlin type used to indicate that a function does not return any value. Unit can be considered to be the Kotlin equivalent of void in other languages. The parameter has been assigned a label of “middleContent”, though this could be any valid label name that helps to describe the slot and allows us to reference it within the body of the function. The only remaining change to this composable is to substitute the middleContent component into the Column declaration as follows:
+
+При вызове компонуемого элемента SlotDemo ему нужно будет передать компонуемую функцию. Обратите внимание, что функция объявлена как возвращающая объект Unit. Unit - это тип Kotlin, используемый для указания того, что функция не возвращает никакого значения. Unit можно считать эквивалентом Kotlin для void в других языках. Параметру присвоена метка “middleContent”, хотя это может быть любое допустимое имя метки, которое помогает описать слот и позволяет нам ссылаться на него в теле функции. Единственным оставшимся изменением в этом компонуемом элементе является замена компонента middleContent в объявлении столбца следующим образом:
+*/
+
+@Composable
+fun SlotDemo(middleContent: @Composable () -> Unit) {
+  Column {
+    Text("Top Text")
+    middleContent()
+    Text("Bottom Text")
+  }
+}
+
+/*
+We have now successfully declared a slot API for our SlotDemo composable.
+
+Теперь мы успешно объявили slot API для нашего компонуемого элемента SlotDemo.
+*/
+
+
+
+22.3 Calling slot API composables
+---------------------------------
+
+/*
+The next step is to learn how to make use of the slot API configured into our SlotDemo composable. This simply involves passing a composable through as a parameter when making the SlotDemo function call. Suppose, for example, that we need the following composable to appear in the middleContent slot:
+
+Следующим шагом будет изучение того, как использовать slot API, сконфигурированный в нашей компонуемой функции SlotDemo. Это просто предполагает передачу компонуемого элемента в качестве параметра при вызове функции SlotDemo. Предположим, например, что нам нужно, чтобы следующий компонуемый элемент появился в слоте middleContent:
+*/
+
+@Composable
+fun ButtonDemo() {
+  Button(onClick = { }) {
+    Text("Click Me")
+  }
+}
+
+/*
+We can now call our SlotDemo composable function as follows:
+
+Теперь мы можем вызвать нашу компонуемую функцию SlotDemo следующим образом:
+*/
+
+SlotDemo(middleContent = { ButtonDemo() })
+
+/*
+While this syntax works, it can quickly become cluttered if the composable has more than one slot to be filled.
+A cleaner syntax reads as follows:
+
+Хотя этот синтаксис работает, он может быстро загромождаться, если в компонуемом элементе есть более одного места, подлежащего заполнению.
+Более чистый синтаксис выглядит следующим образом:
+*/
+
+SlotDemo {
+  ButtonDemo()
+}
+
+/*
+Regardless of the syntax used, the design will be rendered as shown below in Figure 22-2:
+
+Независимо от используемого синтаксиса, дизайн будет отображен так, как показано ниже на рисунке 22-2:
+*/
+
+Figure 22-2
+
+/*
+A slot API is not, of course, limited to a single slot. The SlotDemo example could be composed entirely of slots as follows:
+
+API слота, конечно, не ограничивается одним слотом. Пример SlotDemo может полностью состоять из слотов следующим образом:
+*/
+
+@Composable
+fun SlotDemo(
+  topContent: @Composable () -> Unit,
+  middleContent: @Composable () -> Unit,
+  bottomContent: @Composable () -> Unit
+) {
+  Column {
+    topContent()
+    middleContent()
+    bottomContent()
+  }
+}
+
+/*
+With these changes made, the call to SlotDemo could be structured as follows:
+
+С учетом внесенных изменений, вызов SlotDemo может быть структурирован следующим образом:
+*/
+
+SlotDemo(
+  topContent = { Text("Top Text") },
+  middleContent = { ButtonDemo() },
+  bottomContent = { Text("Bottom Text") }
+)
+
+/*
+As with the single slot, this can be abbreviated for clarity:
+
+Как и в случае с одним слотом, для наглядности это можно сократить:
+*/
+
+SlotDemo(
+  { Text("Top Text") },
+  { ButtonDemo() },
+  { Text("Bottom Text") }
+)
+
+
+
+22.4 Summary
+------------
+
+/*
+In this chapter, we have introduced the concept of slot APIs and demonstrated how they can be added to composable functions. By implementing a slot API, the content of a composable function can be specified dynamically at the point that it is called. This contrasts with the static content of a typical composable where the content is defined at the point the function is written and cannot subsequently be changed. A composable with a slot API is essentially a user interface template containing one or more slots into which other composables can be inserted at runtime.
+
+With the basics of slot APIs covered in this chapter, the next chapter will create a project that puts this theory into practice.
+
+
+В этой главе мы представили концепцию slot API и продемонстрировали, как они могут быть добавлены к компонуемым функциям. Реализуя slot API, содержимое компонуемой функции может быть задано динамически в момент ее вызова. Это контрастирует со статическим содержимым типичного компонуемого объекта, где содержимое определяется в момент написания функции и впоследствии не может быть изменено. Компонуемый объект с API slot - это, по сути, шаблон пользовательского интерфейса, содержащий один или несколько слотов, в которые другие компонуемые объекты могут быть вставлены во время выполнения.
+
+Поскольку в этой главе рассмотрены основы slot API, в следующей главе будет создан проект, который применяет эту теорию на практике.
+*/
+
