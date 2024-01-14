@@ -1,0 +1,560 @@
+20. An Overview of Compose State and Recomposition
+==================================================
+
+/*
+State is the cornerstone of how the Compose system is implemented. As such, a clear understanding of state is an essential step in becoming a proficient Compose developer. In this chapter, we will explore and demonstrate the basic concepts of state and explain the meaning of related terms such as recomposition, unidirectional data flow, and state hoisting. The chapter will also cover saving and restoring state through configuration changes.
+
+Состояние является краеугольным камнем того, как реализована система Compose. Таким образом, четкое понимание состояния является важным шагом на пути к тому, чтобы стать опытным Compose-разработчиком. В этой главе мы рассмотрим и продемонстрируем основные концепции состояния и объясним значение связанных терминов, таких как рекомпозиция, однонаправленный поток данных и продвижение состояния (state hoisting). В этой главе также будет рассмотрено сохранение и восстановление состояния при изменения конфигурации.
+*/
+
+
+
+20.1 The basics of state
+------------------------
+
+/*
+In declarative languages such as Compose, state is generally referred to as “a value that can change over time”. At first glance, this sounds much like any other data in an app. A standard Kotlin variable, for example, is by definition designed to store a value that can change at any time during execution. State, however, differs from a standard variable in two significant ways.
+
+First, the value assigned to a state variable in a composable function needs to be remembered. In other words, each time a composable function containing state (a stateful function) is called, it must remember any state values from the last time it was invoked. This is different from a standard variable which would be re-initialized each time a call is made to the function in which it is declared.
+
+The second key difference is that a change to any state variable has far reaching implications for the entire hierarchy tree of composable functions that make up a user interface. To understand why this is the case, we now need to talk about recomposition.
+
+
+
+В декларативных языках, таких как Compose, состояние (state) обычно обозначается как “значение, которое может изменяться с течением времени”. На первый взгляд, это звучит так же, как и любые другие данные в приложении. Стандартная переменная Kotlin, например, по определению предназначена для хранения значения, которое может измениться в любой момент во время выполнения. Состояние, однако, отличается от стандартной переменной двумя существенными деталями.
+
+Во-первых, необходимо запомнить значение, присвоенное переменной состояния в компонуемой функции. Другими словами, каждый раз, когда вызывается компонуемая функция, содержащая состояние (функция с отслеживанием состояния), она должна запоминать все значения состояния с момента последнего вызова. Это отличается от стандартной переменной, которая повторно инициализировалась бы каждый раз при вызове функции, в которой она объявлена.
+
+Второе ключевое отличие заключается в том, что изменение любой переменной состояния имеет далеко идущие последствия для всего иерархического дерева компонуемых функций, составляющих пользовательский интерфейс. Чтобы понять, почему это так, нам теперь нужно поговорить о рекомпозиции.
+*/
+
+
+
+20.2 Introducing recomposition
+------------------------------
+
+/*
+When developing with Compose, we build apps by creating hierarchies of composable functions. As previously discussed, a composable function can be thought of as taking data and using that data to generate sections of a user interface layout. These elements are then rendered on the screen by the Compose runtime system. In most cases, the data passed from one composable function to another will have been declared as a state variable in a parent function. This means that any change of state value in a parent composable will need to be reflected in any child composables to which the state has been passed. Compose addresses this by performing an operation referred to as recomposition.
+
+Recomposition occurs whenever a state value changes within a hierarchy of composable functions. As soon as Compose detects a state change, it works through all of the composable functions in the activity and recomposes any functions affected by the state value change. Recomposing simply means that the function gets called again and passed the new state value.
+
+Recomposing the entire composable tree for a user interface each time a state value changes would be a highly inefficient approach to rendering and updating a user interface. Compose avoids this overhead using a technique called intelligent recomposition that involves only recomposing those functions directly affected by the state change. In other words, only functions that read the state value will be recomposed when the value changes.
+
+
+При разработке с помощью Compose мы строим приложения посредством создания иерархии компонуемых функций. Как обсуждалось ранее, компонуемую функцию можно рассматривать как получение данных и использование этих данных для создания разделов макета пользовательского интерфейса. Эти элементы затем отображаются на экране системой Compose runtime. В большинстве случаев данные, передаваемые из одной компонуемой функции в другую, будут объявлены как переменная состояния в родительской функции. Это означает, что любое изменение значения состояния в родительском компонуемом элементе должно быть отражено во всех дочерних компонуемых элементах, которым было передано состояние. Compose решает эту проблему, выполняя операцию, называемую рекомпозицией.
+
+Рекомпозиция происходит всякий раз, когда изменяется значение состояния в иерархии компонуемых функций. Как только Compose обнаруживает изменение состояния, он обрабатывает все компонуемые функции в активити и перекомпоновывает все функции, на которые повлияло изменение значения состояния. Рекомпозиция просто означает, что функция вызывается снова и ей передается новое значение состояния.
+
+Рекомпозиция всего компонуемого дерева для пользовательского интерфейса при каждом изменении значения состояния была бы крайне неэффективным подходом к отрисовке и обновлению пользовательского интерфейса. Compose позволяет избежать этих накладных расходов, используя метод, называемый интеллектуальной рекомпозицией, который включает в себя рекомпозицию только тех функций, на которые непосредственно влияет изменение состояния. Другими словами, только функции, которые считывают значение состояния, будут перекомпонованы при изменении значения.
+*/
+
+
+
+20.3 Creating the StateExample project
+--------------------------------------
+
+/*
+Launch Android Studio and select the New Project option from the welcome screen. Within the resulting new project dialog, choose the Empty Activity template before clicking on the Next button.
+
+Enter StateExample into the Name field and specify com.example.stateexample as the package name. Before clicking on the Finish button, change the Minimum API level setting to API 26: Android 8.0 (Oreo). On completion of the project creation process, the StateExample project should be listed in the Project tool window located along the left-hand edge of the Android Studio main window.
+
+
+Запустите Android Studio и выберите параметр "Новый проект" на экране приветствия. В появившемся диалоговом окне "Новый проект" выберите шаблон Empty Activity, прежде чем нажать кнопку "Далее".
+
+Введите StateExample в поле "Имя" и укажите com.example.stateexample в качестве имени пакета. Прежде чем нажать на кнопку Готово, измените настройку минимального уровня API на API 26: Android 8.0 (Oreo). По завершении процесса создания проекта проект StateExample должен быть указан в окне Project tool, расположенном вдоль левого края главного окна Android Studio.
+*/
+
+
+
+20.4 Declaring state in a composable
+------------------------------------
+
+/*
+The first step in declaring a state value is to wrap it in a MutableState object. MutableState is a Compose class which is referred to as an observable type. Any function that reads a state value is said to have subscribed to that observable state. As a result, any changes to the state value will trigger the recomposition of all subscribed functions.
+
+Within Android Studio, open the MainActivity.kt file, delete the Greeting composable and modify the class so that it reads as follows:
+
+
+Первый шаг при объявлении значения состояния - обернуть его в объект MutableState. MutableState - это класс Compose, который называется наблюдаемым типом. Считается, что любая функция, считывающая значение состояния, подписалась на это наблюдаемое состояние. В результате любые изменения значения состояния вызовут рекомпозицию всех подписанных функций.
+
+В Android Studio откройте файл MainActivity.kt, удалите компонуемую функцию Greeting и измените класс так, чтобы он выглядел следующим образом:
+*/
+
+package com.example.stateexample
+.
+.
+class MainActivity : ComponentActivity() {
+  override fun onCreate(savedInstanceState: Bundle?) {
+    super.onCreate(savedInstanceState)
+    setContent {
+      StateExampleTheme {
+        Surface(color = MaterialTheme.colorScheme.background) {
+          DemoScreen()
+        }
+      }
+    }
+  }
+}
+
+@Composable
+fun DemoScreen() {
+  MyTextField()
+}
+
+@Composable
+fun MyTextField() {
+}
+
+@Preview(showBackground = true)
+@Composable
+fun GreetingPreview() {
+  StateExampleTheme {
+    DemoScreen()
+  }
+}
+
+/*
+The objective here is to implement MyTextField as a stateful composable function containing a state variable and an event handler that changes the state based on the user’s keyboard input. The result is a text field in which the characters appear as they are typed.
+
+MutableState instances are created by making a call to the mutableStateOf() runtime function, passing through the initial state value. The following, for example, creates a MutableState instance initialized with an empty String value:
+
+
+Цель здесь состоит в том, чтобы реализовать MyTextField как компонуемую функцию с отслеживанием состояния, содержащую переменную состояния и обработчик событий, который изменяет состояние на основе ввода с клавиатуры пользователем. Результатом является текстовое поле, в котором символы отображаются по мере их ввода.
+
+Экземпляры MutableState создаются путем вызова функции времени выполнения mutableStateOf(), передающей начальное значение состояния. Следующий пример создает экземпляр MutableState, инициализированный пустым строковым значением:
+*/
+
+var textState = { mutableStateOf("") }
+
+/*
+This provides an observable state which will trigger a recomposition of all subscribed functions when the contained value is changed. The above declaration is, however, missing a key element. As previously discussed, state must be remembered through recompositions. As currently implemented, the state will be reinitialized to an empty string each time the function in which it is declared is recomposed. To retain the current state value, we need to use the remember keyword:
+
+Это обеспечивает наблюдаемое состояние, которое запускает рекомпозицию всех подписанных функций при изменении содержащегося значения. Однако в приведенном выше объявлении отсутствует ключевой элемент. Как обсуждалось ранее, состояние должно запоминаться при выполнении рекомпозиции. При текущей реализации кода, состояние будет повторно инициализироваться в пустую строку каждый раз, когда функция, в которой оно объявлено, перекомпоновывается. Чтобы сохранить текущее значение состояния, нам нужно использовать ключевое слово remember:
+*/
+
+var myState = remember { mutableStateOf("") }
+
+/*
+Remaining within the MainActivity.kt file, add some imports and modify the MyTextField composable as follows:
+
+Оставаясь в файле MainActivity.kt, добавьте несколько директив import и измените компонуемое поле MyTextField следующим образом:
+*/
+
+.
+.
+import androidx.compose.material3.*
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.foundation.layout.Column
+.
+.
+@Composable
+fun MyTextField() {
+  var textState = remember { mutableStateOf("") }
+  val onTextChange = { text : String ->
+    textState.value = text
+  }
+  TextField(
+    value = textState.value,
+    onValueChange = onTextChange
+  )
+}
+
+/*
+If the code editor reports that the Material 3 TextField is experimental, modify the MyTextField composable as follows:
+
+Если редактор кода сообщает, что текстовое поле TextField Material 3 является экспериментальным, измените компонуемую функцию MyTextField следующим образом:
+*/
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun MyTextField() {
+  var textState by remember { mutableStateOf("") }
+.
+.
+
+/*
+Test the code using the Preview panel in interactive mode and confirm that keyboard input appears in the TextField as it is typed.
+
+When looking at Compose code examples, you may see MutableState objects declared in different ways. When using the above format, it is necessary to read and set the value property of the MutableState instance. For example, the event handler to update the state reads as follows:
+
+
+Протестируйте код с помощью панели предварительного просмотра в интерактивном режиме и убедитесь, что ввод с клавиатуры отображается в текстовом поле по мере его ввода.
+
+При просмотре примеров кода Compose вы можете увидеть изменяемые объекты MutableState, объявленные разными способами. При использовании вышеуказанного формата необходимо прочитать и установить свойство value экземпляра MutableState. Например, обработчик события для обновления состояния выглядит следующим образом:
+*/
+
+val onTextChange = { text: String ->
+  textState.value = text
+}
+
+/*
+Similarly, the current state value is assigned to the TextField as follows:
+
+Аналогично, в элементе TextField значение текущего состояния присваивается следующим образом:
+*/
+
+TextField(
+  value = textState.value,
+  onValueChange = onTextChange
+)
+
+/*
+A more common and concise approach to declaring state is to use Kotlin property delegates via the by keyword as follows (note that two additional libraries need to be imported when using property delegates):
+
+Более распространенным и кратким подходом к объявлению состояния является использование делегатов свойств Kotlin с помощью ключевого слова by следующим образом (обратите внимание, что при использовании делегатов свойств необходимо импортировать две дополнительные библиотеки):
+*/
+
+.
+.
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+.
+.
+@Composable
+fun MyTextField() {
+  var textState by remember { mutableStateOf("") }
+.
+.
+
+/*
+We can now access the state value without needing to directly reference the MutableState value property within the event handler:
+
+Теперь мы можем получить доступ к значению состояния без необходимости напрямую ссылаться на значение свойства MutableState в обработчике событий:
+*/
+
+val onTextChange = { text: String ->
+  textState = text
+}
+
+/*
+This also makes reading the current value more concise:
+
+Это также делает чтение текущего значения более кратким:
+*/
+
+TextField(
+  value = textState,
+  onValueChange = onTextChange
+)
+
+/*
+A third technique separates the access to a MutableState object into a value and a setter function as follows:
+
+Третий метод разделяет доступ к объекту MutableState на значение и функцию-установщик следующим образом:
+*/
+
+var (textValue, setText) = remember { mutableStateOf("") }
+
+/*
+When changing the value assigned to the state we now do so by calling the setText setter, passing through the new value:
+
+При изменении значения, присвоенного состоянию, мы теперь делаем это, вызывая установщик setText, передавая новое значение:
+*/
+
+val onTextChange = { text: String ->
+  setText(text)
+}
+
+/*
+The state value is now accessed by referencing textValue:
+
+Доступ к значению состояния теперь осуществляется путем ссылки на textValue:
+*/
+
+TextField(
+  value = textValue,
+  onValueChange = onTextChange
+)
+
+/*
+In most cases, the use of the by keyword and property delegates is the most commonly used technique because it results in cleaner code. Before continuing with the chapter, revert the example to use the by keyword.
+
+В большинстве случаев использование ключевого слова by и делегатов свойств является наиболее часто используемым методом, поскольку это приводит к более чистому коду. Прежде чем продолжить чтение главы, вернитесь к примеру, чтобы использовать ключевое слово by.
+*/
+
+
+
+20.5 Unidirectional data flow
+-----------------------------
+
+/*
+Unidirectional data flow is an approach to app development whereby state stored in a composable should not be directly changed by any child composable functions. Consider, for example, a composable function named FunctionA containing a state value in the form of a Boolean value. This composable calls another composable function named FunctionB that contains a Switch component. The objective is for the switch to update the state value each time the switch position is changed by the user. In this situation, adherence to unidirectional data flow prohibits FunctionB from directly changing the state value.
+
+Instead, FunctionA would declare an event handler (typically in the form of a lambda) and pass it as a parameter to the child composable along with the state value. The Switch within FunctionB would then be configured to call the event handler each time the switch position changes, passing it the current setting value. The event handler in FunctionA will then update the state with the new value.
+
+Make the following changes to the MainActivity.kt file to implement FunctionA and FunctionB together with a corresponding modification to the preview composable:
+
+
+Однонаправленный поток данных - это подход к разработке приложений, при котором состояние, хранящееся в компонуемом объекте, не должно напрямую изменяться никакими дочерними компонуемыми функциями. Рассмотрим, например, компонуемую функцию с именем functionA, содержащую значение состояния в виде логического значения. Эта компонуемая функция вызывает другую компонуемую функцию с именем functionB, которая содержит компонент Switch. Цель состоит в том, чтобы переключатель обновлял значение состояния каждый раз, когда пользователь изменяет положение переключателя. В этой ситуации соблюдение однонаправленного потока данных запрещает functionB напрямую изменять значение состояния.
+
+Вместо этого functionA объявляет обработчик события (обычно в форме лямбда-выражения) и передает его в качестве параметра дочернему компонуемому объекту вместе со значением состояния. Переключатель в functionB затем будет сконфигурирован для вызова обработчика событий при каждом изменении положения переключателя, передавая ему текущее значение настройки. Обработчик событий в functionA затем обновит состояние новым значением.
+
+Внесите следующие изменения в файл MainActivity.kt для реализации функций A и functionB вместе с соответствующей модификацией компонуемого предварительного просмотра:
+*/
+
+@Composable
+fun FunctionA() {
+  var switchState by remember { mutableStateOf(true) }
+  val onSwitchChange = { value : Boolean ->
+    switchState = value
+  }
+
+  FunctionB(
+    switchState = switchState,
+    onSwitchChange = onSwitchChange
+  )
+}
+
+@Composable
+fun FunctionB(
+  switchState: Boolean, 
+  onSwitchChange : (Boolean) -> Unit 
+) {
+  Switch(
+    checked = switchState,
+    onCheckedChange = onSwitchChange
+  )
+}
+
+@Preview(showBackground = true)
+@Composable
+fun GreetingPreview() {
+  StateExampleTheme {
+    Column {
+      DemoScreen()
+      FunctionA()
+    }
+  }
+}
+
+/*
+Preview the app using interactive mode and verify that clicking the switch changes the slider position between on and off states.
+
+We can now use this example to break down the state process into the following individual steps which occur when FunctionA is called:
+1. The switchState state variable is initialized with a true value.
+2. The onSwitchChange event handler is declared to accept a Boolean parameter which it assigns to switchState when called.
+3. FunctionB is called and passed both switchState and a reference to the onSwitchChange event handler.
+4. FunctionB calls the built-in Switch component and configures it to display the state assigned to switchState. The Switch component is also configured to call the onSwitchChange event handler when the user changes the switch setting.
+5. Compose renders the Switch component on the screen.
+
+The above sequence explains how the Switch component gets rendered on the screen when the app first launches.
+We can now explore the sequence of events that occur when the user slides the switch to the “off ” position:
+1. The switch is moved to the “off ” position.
+2. The Switch component calls the onSwitchChange event handler passing through the current switch position value (in this case false).
+3. The onSwitchChange lambda declared in FunctionA assigns the new value to switchState.
+4. Compose detects that the switchState state value has changed and initiates a recomposition.
+5. Compose identifies that FunctionB contains code that reads the value of switchState and therefore needs to be recomposed.
+6. Compose calls FunctionB with the latest state value and the reference to the event handler.
+7. FunctionB calls the Switch composable and configures it with the state and event handler.
+8. Compose renders the Switch on the screen, this time with the switch in the “off ” position.
+
+The key point to note about this process is that the value assigned to switchState is only changed from within FunctionA and never directly updated by FunctionB. The Switch setting is not moved from the “on” position to the “off ” position directly by FunctionB. Instead, the state is changed by calling upwards to the event handler located in FunctionA, and allowing recomposition to regenerate the Switch with the new position setting.
+
+As a general rule, data is passed down through a composable hierarchy tree while events are called upwards to handlers in ancestor components as illustrated in Figure 20-1:
+
+
+Просмотрите приложение в интерактивном режиме и убедитесь, что нажатие переключателя изменяет положение ползунка между состояниями on и off.
+
+Теперь мы можем использовать этот пример, чтобы разбить процесс определения состояния на следующие отдельные шаги, которые выполняются при вызове functionA:
+1. Переменная состояния switchState инициализируется значением true.
+2. Объявляется, что обработчик события onSwitchChange принимает логический параметр, который он присваивает switchState при вызове.
+3. Вызывается FunctionB и ей передаются как switchState, так и ссылка на обработчик события onSwitchChange.
+4. FunctionB вызывает встроенный компонент Switch и настраивает его для отображения состояния, назначенного switchState. Компонент Switch также настроен на вызов обработчика событий onSwitchChange, когда пользователь изменяет настройку switch.
+5. Compose отображает компонент Switch на экране.
+
+Приведенная выше последовательность объясняет, как компонент Switch отображается на экране при первом запуске приложения.
+Теперь мы можем изучить последовательность событий, которые происходят, когда пользователь перемещает переключатель в положение “выкл.”:
+1. Переключатель перемещается в положение “выкл.”.
+2. Компонент Switch вызывает обработчик события onSwitchChange, передающий текущее значение положения переключателя (в данном случае false).
+3. Лямбда-выражение onSwitchChange, объявленное в FunctionA, присваивает новое значение switchState.
+4. Compose обнаруживает, что значение состояния switchState изменилось, и инициирует повторную компоновку.
+5. Compose определяет, что FunctionB содержит код, который считывает значение switchState и, следовательно, нуждается в повторной компоновке.
+6. Compose вызывает FunctionB с последним значением состояния и ссылкой на обработчик события.
+7. FunctionB вызывает компонуемый элемент Switch и настраивает его, передавая ему состояние и обработчик событий.
+8. Compose отображает переключатель на экране, на этот раз с переключателем в положении “выкл.”.
+
+Ключевым моментом, на который следует обратить внимание в этом процессе, является то, что значение, присвоенное switchState, изменяется только из functionA и никогда не обновляется напрямую functionB. Настройка переключателя не перемещается из положения “включено” в положение “выключено” непосредственно functionB. Вместо этого состояние изменяется путем вызова вверх обработчика событий, расположенного в functionA, и разрешения рекомпозиции для регенерации переключателя с новой настройкой положения.
+
+Как правило, данные передаются вниз по компонуемому иерархическому дереву, в то время как события вызываются вверх к обработчикам в компонентах-предках, как показано на рисунке 20-1:
+*/
+
+Figure 20-1
+
+
+
+20.6 State hoisting
+-------------------
+
+/*
+If you look up the word “hoist” in a dictionary it will likely be defined as the act of raising or lifting something. The term state hoisting has a similar meaning in that it involves moving state from a child composable up to the calling (parent) composable or a higher ancestor. When the child composable is called by the parent, it is passed the state along with an event handler. When an event occurs in the child composable that requires an update to the state, a call is made to the event handler passing through the new value as outlined earlier in the chapter. This has the advantage of making the child composable stateless and, therefore, easier to reuse. It also allows the state to be passed down to other child composables later in the app development process.
+
+Consider our MyTextField example from earlier in the chapter:
+
+
+Если вы посмотрите слово “hoist” в словаре, оно, скорее всего, будет определено как акт поднятия чего-либо. Термин "продвижение состояния" имеет аналогичное значение в том смысле, что он включает перемещение состояния от дочернего компонуемого объекта к вызывающему (родительскому) компонуемому объекту или более высокому предку. Когда дочерний компонуемый вызывается родительским, ему передается состояние вместе с обработчиком события. Когда в дочернем компонуемом происходит событие, требующее обновления состояния, выполняется вызов обработчика событий, передающего новое значение, как описано ранее в этой главе. Преимущество этого заключается в том, что дочерний компонуемый объект не имеет состояния и, следовательно, его легче повторно использовать. Это также позволяет передавать состояние другому дочернему компонуемому объекту позже в процессе разработки приложения.
+
+Рассмотрим наш пример MyTextField из предыдущей главы:
+*/
+
+@Composable
+fun DemoScreen() {
+  MyTextField()
+}
+
+@Composable
+fun MyTextField() {
+  var textState by remember { mutableStateOf("") }
+  val onTextChange = { text : String ->
+    textState = text
+  }
+  TextField(
+    value = textState,
+    onValueChange = onTextChange
+  )
+}
+
+/*
+The self-contained nature of the MyTextField composable means that it is not a particularly useful component. One issue is that the text entered by the user is not accessible to the calling function and, therefore, cannot be passed to any sibling functions. It is also not possible to pass a different state and event handler through to the function, thereby limiting its re-usability.
+
+To make the function more useful we need to hoist the state into the parent DemoScreen function as follows:
+
+
+Самодостаточный характер myTextField composable означает, что он не является особенно полезным компонентом. Одна из проблем заключается в том, что текст, введенный пользователем, недоступен вызывающей функции и, следовательно, не может быть передан никаким родственным функциям. Также невозможно передать функции другой обработчик состояния и событий, тем самым ограничивая ее повторное использование.
+
+Чтобы сделать функцию более полезной, нам нужно перенести состояние в родительскую функцию демонстрационного экрана следующим образом:
+*/
+
+@Composable
+fun DemoScreen() {
+  var textState by remember { mutableStateOf("") }
+  val onTextChange = { text : String ->
+    textState = text
+  }
+  MyTextField(text = textState, onTextChange = onTextChange)
+}
+
+@Composable
+fun MyTextField(text: String, onTextChange : (String) -> Unit) {
+  //var textState by remember { mutableStateOf("") }
+  //val onTextChange = { text : String ->
+  //textState = text
+  //}
+  TextField(
+    value = text,
+    onValueChange = onTextChange
+  )
+}
+
+@Preview(showBackground = true)
+@Composable
+fun GreetingPreview() {
+  StateExampleTheme {
+    DemoScreen()
+  }
+}
+
+/*
+With the state hoisted to the parent function, MyTextField is now a stateless, reusable composable which can be called and passed any state and event handler. Also, the text entered by the user is now accessible by the parent function and may be passed down to other composables if necessary.
+
+State hoisting is not limited to moving to the immediate parent of a composable. State can be raised any number of levels upward within the composable hierarchy and subsequently passed down through as many layers of children as needed (within reason). This will often be necessary when multiple children need access to the same state. In such a situation, the state will need to be hoisted up to an ancestor that is common to both children.
+
+In Figure 20-2 below, for example, both NameField and NameText need access to textState. The only way to make the state available to both composables is to hoist it up to the MainScreen function since this is the only ancestor both composables have in common:
+
+
+
+С учетом продвижения состояния к родительской функции MyTextField теперь является компонуемым объектом без сохранения состояния с возможностью повторного использования, он может быть вызван и ему необходимо передать состояние и обработчик события. Кроме того, текст, введенный пользователем, теперь доступен родительской функции и при необходимости может быть передан другим компонуемым элементам.
+
+Продвижение состояния не ограничивается перемещением к непосредственному родительскому элементу компонуемого объекта. Состояние может быть поднято на любое количество уровней вверх в иерархии компонуемого объекта и впоследствии передано вниз через столько дочерних уровней, сколько необходимо (в пределах разумного). Это часто бывает необходимо, когда нескольким дочерним элементам требуется доступ к одному и тому же состоянию. В такой ситуации состояние необходимо будет поднять до предка, который является общим для обоих дочерних элементов.
+
+На рисунке 20-2 ниже, например, и NameField, и NameText нуждаются в доступе к textState. Единственный способ сделать состояние доступным для обоих составных элементов - перенести его в функцию главного экрана, поскольку это единственный общий предок для обоих составных элементов:
+*/
+
+Figure 20-2
+
+/*
+The solid arrows indicate the path of textState as it is passed down through the hierarchy to the NameField and NameText functions (in the case of the NameField, a reference to the event handler is also passed down), while the dotted line represents the calls from NameField function to an event handler declared in MainScreen as the text changes.
+
+Note that if you find yourself passing state down through an excessive number of child layers, it may be worth looking at CompositionLocalProvider, a topic covered in the chapter entitled “An Introduction to Composition Local”.
+
+When adding state to a function, take some time to decide whether hoisting state to the caller (or higher) might make for a more re-usable and flexible composable. While situations will arise where state is only needed to be used locally in a composable, in most cases it probably makes sense to hoist the state up to an ancestor.
+
+
+
+Сплошные стрелки указывают путь к textState по мере его передачи вниз по иерархии к функциям NameField и NameText (в случае NameField также передается ссылка на обработчик событий), в то время как пунктирная линия представляет вызовы из функции NameField к обработчику событий, объявленному в функции MainScreen и обеспечивающему изменение текста.
+
+Обратите внимание, что если вы обнаружите, что передаете состояние вниз через чрезмерное количество дочерних слоев, возможно, стоит взглянуть на CompositionLocalProvider, тема, рассмотренная в главе 21, озаглавленной “Введение в Composition Local”.
+
+При добавлении состояния в функцию потратьте некоторое время на то, чтобы решить, может ли передача состояния вызывающему объекту (или выше) сделать ваш компонуемый элемент более гибким и пригодным для повторного использования. Хотя будут возникать ситуации, когда состояние необходимо только для локального использования в компонуемом объекте, в большинстве случаев, вероятно, имеет смысл поднять состояние до предка.
+*/
+
+
+
+20.7 Saving state through configuration changes
+-----------------------------------------------
+
+/*
+We now know that the remember keyword can be used to save state values through recompositions. This technique does not, however, retain state between configuration changes. A configuration change generally occurs when some aspect of the device changes in a way that alters the appearance of an activity (such as rotating the orientation of the device between portrait and landscape or changing a system-wide font setting).
+
+Changes such as these will cause the entire activity to be destroyed and recreated. The reasoning behind this is that these changes affect resources such as the layout of the user interface and simply destroying and recreating impacted activities is the quickest way for an activity to respond to the configuration change. The result is a newly initialized activity with no memory of any previous state values.
+
+To experience the effect of a configuration change, run the StateExample app on an emulator or device and, once running, enter some text so that it appears in the TextField before changing the orientation from portrait to landscape. When using the emulator, device rotation may be simulated using the rotation button located in the emulator toolbar. To complete the rotation on Android 11 or older, it may also be necessary to tap on the rotation button. This appears in the toolbar of the device or emulator screen as shown in Figure 20-3:
+
+
+
+Теперь мы знаем, что ключевое слово remember можно использовать для сохранения значений состояния путем рекомпозиции. Однако этот метод не сохраняет состояние между изменениями конфигурации. Изменение конфигурации обычно происходит, когда какой-либо аспект устройства изменяется таким образом, что изменяется внешний вид активити (например, изменение ориентации устройства с книжной на альбомную или изменение общесистемной настройки шрифта).
+
+Подобные изменения приведут к уничтожению и повторному созданию активити. Причина этого заключается в том, что эти изменения влияют на ресурсы, такие как макет пользовательского интерфейса, и простое уничтожение и повторное создание затронутых действий - это самый быстрый способ для активити отреагировать на изменение конфигурации. Результатом является вновь инициализированная активити без памяти о каких-либо предыдущих значениях состояния.
+
+Чтобы ощутить эффект изменения конфигурации, запустите приложение StateExample на эмуляторе или устройстве и после запуска введите некоторый текст, чтобы он появился в текстовом поле, прежде чем менять ориентацию с книжной на альбомную. При использовании эмулятора вращение устройства может быть смоделировано с помощью кнопки поворота, расположенной на панели инструментов эмулятора. Чтобы завершить вращение на Android 11 или более поздней версии, также может потребоваться нажать на кнопку поворота. Это отображается на панели инструментов экрана устройства или эмулятора, как показано на рисунке 20-3:
+*/
+
+Figure 20-3
+
+/*
+Before performing the rotation on Android 12 or later, you may need to enter the Settings app, select the Display category and enable the Auto-rotate screen option.
+
+Note that after rotation, the TextField is now blank and the text entered has been lost. In situations where state needs to be retained through configuration changes, Compose provides the rememberSaveable keyword. When rememberSaveable is used, the state will be retained not only through recompositions, but also configuration changes. Modify the textState declaration to use rememberSaveable as follows:
+
+
+Перед выполнением поворота на Android 12 или более поздней версии вам, возможно, потребуется зайти в приложение "Настройки", выбрать категорию отображения и включить опцию автоматического поворота экрана.
+
+Обратите внимание, что после поворота текстовое поле теперь пустое, а введенный текст был потерян. В ситуациях, когда состояние необходимо сохранить после изменения конфигурации, Compose предоставляет ключевое слово rememberSaveable. При использовании rememberSaveable состояние будет сохраняться не только при рекомпозиции, но и при изменений конфигурации. Измените текстовое объявление состояния, чтобы использовать rememberSaveable следующим образом:
+*/
+.
+.
+import androidx.compose.runtime.saveable.rememberSaveable
+.
+.
+@Composable
+fun DemoScreen() {
+  var textState by rememberSaveable { mutableStateOf("") }
+.
+.
+
+/*
+Build and run the app once again, enter some text and perform another rotation. Note that the text is now preserved following the configuration change.
+
+Создайте и запустите приложение еще раз, введите некоторый текст и выполните еще один поворот. Обратите внимание, что текст теперь сохраняется после изменения конфигурации.
+*/
+
+
+
+20.8 Summary
+------------
+
+/*
+When developing apps with Compose it is vital to have a clear understanding of how state and recomposition work together to make sure that the user interface is always up to date. In this chapter, we have explored state and described how state values are declared, updated, and passed between composable functions. You should also have a better understanding of recomposition and how it is triggered in response to state changes. We also introduced the concept of unidirectional data flow and explained how data flows down through the compose hierarchy while data changes are made by making calls upward to event handlers declared within ancestor stateful functions.
+
+An important goal when writing composable functions is to maximize re-usability. This can be achieved, in part, by hoisting state out of a composable up to the calling parent or a higher function in the compose hierarchy.
+
+Finally, the chapter described configuration changes and explained how such changes result in the destruction and recreation of entire activities. Ordinarily, state is not retained through configuration changes unless specifically configured to do so using the rememberSaveable keyword.
+
+
+При разработке приложений с помощью Compose жизненно важно иметь четкое представление о том, как состояние и рекомпозиция работают вместе, чтобы убедиться, что пользовательский интерфейс всегда обновляется. В этой главе мы рассмотрели состояние и описали, как объявляются, обновляются и передаются значения состояния между компонуемыми функциями. Вы также должны лучше понимать рекомпозицию и то, как она запускается в ответ на изменения состояния. Мы также представили концепцию однонаправленного потока данных и объяснили, как данные передаются вниз по иерархии compose, в то время как изменения данных производятся путем выполнения вызовов вверх к обработчикам событий, объявленным в функциях с отслеживанием состояния предков.
+
+Важной целью при написании компонуемых функций является максимальное повторное использование. Частично это может быть достигнуто путем передачи состояния из дочернего компонуемого элемента вызывающему родительскому элементу или более высокой функции в иерархии компонуемых элементов.
+
+Наконец, в главе описывались изменения конфигурации и объяснялось, как такие изменения приводят к уничтожению и воссозданию активити. Обычно состояние не сохраняется при изменении конфигурации, если для этого специально не настроено ключевое слово rememberSaveable.
+*/
+
