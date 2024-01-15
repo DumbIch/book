@@ -1,0 +1,561 @@
+23. A Compose Slot API Tutorial
+===============================
+
+/*
+In this chapter, we will be creating a project within Android Studio to practice the use of slot APIs to build flexible and dynamic composable functions. This will include writing a composable function with two slots and calling that function with different content composables based on selections made by the user.
+
+В этой главе мы создадим проект в Android Studio, чтобы попрактиковаться в использовании slot APIs для создания гибких и динамичных компонуемых функций. Он будет включать в себя написание компонуемой функции с двумя слотами и вызов этой функции с различными компонуемыми элементами содержимого на основе выбора, сделанного пользователем.
+*/
+
+
+
+23.1 About the project
+----------------------
+
+/*
+Once the project is completed, it will consist of a title, progress indicator, and two checkboxes. The checkboxes will be used to control whether the title is represented as text or graphics, and also whether a circular or linear progress indicator is displayed. Both the title and progress indicator will be declared as slots which will be filled with either a Text or Image composable for the title or, in the case of the progress indicator, a LinearProgressIndicator or CircularProgressIndicator component.
+
+Проект будет состоять из заголовка, индикатора выполнения и двух флажков. Флажки будут использоваться для управления тем, будет ли заголовок представлен в виде текста или графики, а также будет ли отображаться круговой или линейный индикатор выполнения. И заголовок, и индикатор выполнения будут объявлены как слоты, которые будут заполнены либо текстом, либо изображением, которое можно компоновать для заголовка, либо, в случае индикатора выполнения, компонентом LinearProgressIndicator или CircularProgressIndicator.
+*/
+
+
+
+23.2 Creating the SlotApiDemo project
+-------------------------------------
+
+/*
+Launch Android Studio and select the New Project option from the welcome screen. Choose the Empty Activity template within the New Project dialog before clicking on the Next button.
+
+Enter SlotApiDemo into the Name field and specify com.example.slotapidemo as the package name. Before clicking on the Finish button, change the Minimum API level setting to API 26: Android 8.0 (Oreo). Once the project has been created, the SlotApiDemo project should be listed in the Project tool window located along the left-hand edge of the Android Studio main window.
+
+
+Запустите Android Studio и выберите опцию "Создать проект" на экране приветствия. Выберите пустой шаблон Empty Activity в диалоговом окне "Создать проект", прежде чем нажать кнопку "Далее".
+
+Введите SlotApiDemo в поле "Имя" и укажите com.example.slotapidemo в качестве имени пакета. Прежде чем нажать на кнопку Готово, измените настройку минимального уровня API на API 26: Android 8.0 (Oreo). Как только проект будет создан, проект SlotApiDemo должен быть указан в окне инструментов проекта, расположенном вдоль левого края главного окна Android Studio.
+*/
+
+
+
+23.3 Preparing the MainActivity class file
+------------------------------------------
+
+/*
+Android Studio should have automatically loaded the MainActivity.kt file into the code editor. If it has not, locate it in the Project tool window (app -> java -> com.example.slotapidemo -> MainActivity.kt) and double-click on it to load it into the editor. Once loaded, modify the file to remove the template code as follows:
+
+Android Studio должна была автоматически загрузить файл MainActivity.kt в редактор кода. Если этого не произошло, найдите его в окне Project tool (приложение -> java -> com.example.slotapidemo -> MainActivity.kt) и дважды щелкните по нему, чтобы загрузить в редактор. После загрузки измените файл, чтобы удалить код шаблона следующим образом:
+*/
+
+package com.example.slotapidemo
+.
+.
+class MainActivity : ComponentActivity() {
+  override fun onCreate(savedInstanceState: Bundle?) {
+    super.onCreate(savedInstanceState)
+    setContent {
+      SlotApiDemoTheme {
+        Surface(
+          modifier = Modifier.fillMaxSize(),
+          color = MaterialTheme.colorScheme.background
+        ) {
+          // Greeting("Android")
+        }
+      }
+    }
+  }
+}
+
+//@Composable
+//fun Greeting(name: String) {
+//  Text(text = "Hello $name!")
+//}
+
+//@Preview(showBackground = true)
+//@Composable
+//fun GreetingPreview() {
+//  SlotApiDemoTheme {
+//    Greeting("Android")
+//  }
+//}
+
+
+
+23.4 Creating the MainScreen composable
+---------------------------------------
+
+/*
+Edit the onCreate method of the MainActivity class to call a composable named MainScreen from within the Surface component:
+
+Отредактируйте метод onCreate класса MainActivity, чтобы вызвать компонуемый элемент MainScreen из компонента Surface:
+*/
+
+override fun onCreate(savedInstanceState: Bundle?) {
+  super.onCreate(savedInstanceState)
+  setContent {
+    SlotDemoTheme {
+      Surface(
+        modifier = Modifier.fillMaxSize(),
+        color = MaterialTheme.colorScheme.background
+      ) {
+        MainScreen()
+      }
+    }
+  }
+}
+
+/*
+MainScreen will contain the state and event handlers for the two Checkbox components. Start adding this composable now, making sure to place it after the closing brace '}' of the MainActivity class declaration:
+
+MainScreen будет содержать состояние и обработчик события для двух компонентов Checkbox. Начните добавлять этот компонуемый элемент прямо сейчас, не забудьте поместить его после закрывающей фигурной скобки '}' объявления класса MainActivity:
+*/
+
+.
+.
+import androidx.compose.runtime.*
+import androidx.compose.material3.*
+import androidx.compose.foundation.layout.*
+.
+.
+@Composable
+fun MainScreen() {
+  var linearSelected by remember { mutableStateOf(true) }
+  var imageSelected by remember { mutableStateOf(true) }
+  val onLinearClick = { value : Boolean ->
+    linearSelected = value
+  }
+  val onTitleClick = { value : Boolean ->
+    imageSelected = value
+  }
+}
+
+/*
+Here we have declared two state variables, one for each of the two Checkbox components, and initialized them to true. Next, event handlers have been declared to allow the state of each variable to be changed when the user toggles the Checkbox settings. Later in the project, MainScreen will be modified to call a second composable named ScreenContent.
+
+Здесь мы объявили две переменные состояния, по одной для каждого из двух компонентов Checkbox, и инициализировали их значением true. Далее были объявлены обработчики событий, позволяющие изменять состояние каждой переменной, когда пользователь переключает настройки Checkbox. Позже в проекте функция MainScreen будет изменена для вызова второго компонуемого элемента ScreenContent.
+*/
+
+
+
+23.5 Adding the ScreenContent composable
+----------------------------------------
+
+/*
+When the MainScreen function calls it, the ScreenContent composable will need to be passed the state variables and event handlers and can initially be declared as follows:
+
+Когда функция MainScreen вызывает компонуемый элемент ScreenContent, ему необходимо будет передать переменные состояния и обработчики событий, и первоначально он может быть объявлен следующим образом:
+*/
+
+package com.example.slotapidemo
+.
+.
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.unit.dp
+.
+.
+@Composable
+fun ScreenContent(
+  linearSelected: Boolean,
+  imageSelected: Boolean,
+  onTitleClick: (Boolean) -> Unit,
+  onLinearClick: (Boolean) -> Unit
+) {
+  Column(
+    modifier = Modifier.fillMaxSize(),
+    horizontalAlignment = Alignment.CenterHorizontally,
+    verticalArrangement = Arrangement.SpaceBetween
+  ) {
+    ...
+  }
+}
+
+/*
+As the name suggests, the ScreenContent composable is going to be responsible for displaying the screen content including the title, progress indicator, and checkboxes. In preparation for this content, we have made a call to the Column composable and configured it to center its children along the horizontal axis. The SpaceBetween arrangement property has also been set. This tells the column to space its children evenly but not to include spacing before the first or after the last child.
+
+One of the child composables which ScreenContent will call will be responsible for rendering the two Checkbox components. While these could be added directly within the Column composable, a better approach is to place them in a separate composable which can be called from within ScreenContent.
+
+
+Как следует из названия, компонуемый элемент ScreenContent будет отвечать за отображение содержимого экрана, включая заголовок, индикатор выполнения и флажки. Чтобы обеспечить отображение указанного контента мы обратились к компонуемому элементу Column и настроили его так, чтобы он центрировал дочерние элементы по горизонтальной оси. Также было установлено свойство расположения SpaceBetween. Оно указывает столбцу равномерно распределять дочерние элементы, но не включать интервал перед первым или после последнего дочернего элемента.
+
+Один из дочерних компонуемых элементов, который вызовет ScreenContent, будет отвечать за отображение двух компонентов Checkbox. Хотя они могут быть добавлены непосредственно в компонуемый элемент Column, лучшим подходом является размещение их в отдельном компонуемом элементе, который может быть вызван из ScreenContent.
+*/
+
+
+
+23.6 Creating the Checkbox composable
+-------------------------------------
+
+/*
+The composable containing the checkboxes will consist of a Row component containing two Checkbox instances. In addition, Text composables will be positioned to the left of each Checkbox with a Spacer separating the two Text/Checkbox pairs.
+
+When it is called, the Checkboxes composable will need to be passed the two state variables which will be used to make sure the checkboxes display the current state. Also passed will be references to the onLinearClick and onTitleClick event handlers which will be assigned to the onCheckChange properties of the two Checkbox components.
+
+Remaining within the MainActivity.kt file, add the CheckBoxes composable so that it reads as follows:
+
+
+Компонуемый элемент, содержащий флажки, будет состоять из компонента Row, содержащего два экземпляра Checkbox. Кроме того, компонуемые элементы Text будут расположены слева от каждого флажка (Checkbox) с проставкой (Spacer), разделяющей две пары Text/Checkbox.
+
+При вызове создаваемого компонуемого элемента, компонуемым флажкам необходимо будет передать две переменные состояния, которые будут использоваться, чтобы убедиться, что флажки отображают текущее состояние. Также будут переданы ссылки на обработчики событий onLinearClick и onTitleClick, которые будут назначены свойствам onCheckChange двух компонентов Checkbox.
+
+Оставаясь в файле MainActivity.kt, добавьте компонуемый элемент CheckBoxes, чтобы он выглядел следующим образом:
+*/
+
+@Composable
+fun CheckBoxes(
+  linearSelected: Boolean,
+  imageSelected: Boolean,
+  onTitleClick: (Boolean) -> Unit,
+  onLinearClick: (Boolean) -> Unit
+) {
+  Row(
+    Modifier.padding(20.dp),
+    verticalAlignment = Alignment.CenterVertically
+  ) {
+    Checkbox(
+      checked = imageSelected,
+      onCheckedChange = onTitleClick
+    )
+    Text("Image Title")
+    Spacer(Modifier.width(20.dp))
+    Checkbox(
+      checked = linearSelected,
+      onCheckedChange = onLinearClick
+    )
+    Text("Linear Progress")
+  }
+}
+
+/*
+If you would like to preview the composable before proceeding, add the following preview declaration before clicking on the Build & Refresh link in the Preview panel:
+
+Если вы хотите предварительно просмотреть компонуемый элемент, прежде чем продолжить, добавьте следующее объявление предварительного просмотра, прежде чем нажать на ссылку "Создать и обновить" на панели предварительного просмотра:
+*/
+
+@Preview
+@Composable
+fun DemoPreview() {
+  CheckBoxes(
+    linearSelected = true,
+    imageSelected = true,
+    onTitleClick = { /*TODO*/ }
+    onLinearClick = { /*TODO*/}
+  )
+}
+
+/*
+When calling the CheckBoxes composable in the above preview function we are setting the two state properties to true and assigning stub lambdas that do nothing as the event callbacks.
+
+Once the preview has been refreshed, the layout should match that shown in Figure 23-1 below:
+
+
+При вызове компонуемого элемента CheckBoxes в приведенной выше функции предварительного просмотра мы устанавливаем для двух свойств состояния значение true и назначаем лямбды-заглушки, которые ничего не делают, в качестве обратных вызовов событий.
+
+После обновления предварительного просмотра макет должен соответствовать показанному на рисунке 23-1 ниже:
+*/
+
+Figure 23-1
+
+
+
+23.7 Implementing the ScreenContent slot API
+--------------------------------------------
+
+/*
+Now that we have added the composable containing the two checkboxes, we can call it from within the Column contained within ScreenContent. Since both the state variables and event handlers were already passed into ScreenContent, we can simply pass these to the Checkboxes composable when we call it. Locate the ScreenContent composable and modify it as follows:
+
+Теперь, когда мы добавили компонуемый элемент, содержащий два флажка, мы можем вызвать его из столбца, содержащегося в ScreenContent. Поскольку как переменные состояния, так и обработчики событий уже были переданы в ScreenContent, мы можем просто передать их в компонуемый элемент Checkboxes при вызове. Найдите компонуемый элемент ScreenContent и измените его следующим образом:
+*/
+
+@Composable
+fun ScreenContent(
+  linearSelected: Boolean,
+  imageSelected: Boolean,
+  onTitleClick: (Boolean) -> Unit,
+  onLinearClick: (Boolean) -> Unit
+) {
+  Column(
+    modifier = Modifier.fillMaxSize(),
+    horizontalAlignment = Alignment.CenterHorizontally,
+    verticalArrangement = Arrangement.SpaceBetween
+  ) {
+    CheckBoxes(linearSelected, imageSelected, onTitleClick, onLinearClick)
+  }
+}
+
+/*
+In addition to the row of checkboxes, ScreenContent also needs slots for the title and progress indicator. These will be named titleContent and progressContent and need to be added as parameters and referenced as children of the Column:
+
+В дополнение к ряду флажков, ScreenContent также нужны ячейки для заголовка и индикатора прогресса. Они будут называться titleContent и progressContent и должны быть добавлены в качестве параметров и указаны как дочерние элементы столбца:
+*/
+
+@Composable
+fun ScreenContent(
+  linearSelected: Boolean,
+  imageSelected: Boolean,
+  onTitleClick: (Boolean) -> Unit,
+  onLinearClick: (Boolean) -> Unit,
+  titleContent: @Composable () -> Unit,
+  progressContent: @Composable () -> Unit
+) {
+  Column(
+    modifier = Modifier.fillMaxSize(),
+    horizontalAlignment = Alignment.CenterHorizontally,
+    verticalArrangement = Arrangement.SpaceBetween
+  ) {
+    titleContent()
+    progressContent()
+    CheckBoxes(linearSelected, imageSelected, onTitleClick, onLinearClick)
+  }
+}
+
+/*
+All that remains is to add some code to the MainScreen declaration so that different composables are provided for the slots based on the current values of the linearSelected and imageSelected state variables. Before taking that step, however, we need to add one more composable to display an image in the title slot.
+
+Все, что остается, это добавить некоторый код в объявление MainScreen, чтобы для слотов были предоставлены различные компонуемые элементы на основе текущих значений переменных состояния linearSelected и imageSelected. Однако, прежде чем предпринять этот шаг, нам нужно добавить еще один компонуемый элемент для отображения изображения в слоте заголовка.
+*/
+
+
+
+23.8 Adding an Image drawable resource
+--------------------------------------
+
+/*
+For this example, we will use one of the built-in vector drawings included with the Android SDK. To select a drawing and add it to the project, begin by locating the drawable folder in the Project tool window (app -> res -> drawable) and right-click on it. In the resulting menu (Figure 23-2) select the New -> Vector Asset menu option:
+
+Для этого примера мы будем использовать один из встроенных векторных рисунков, входящих в состав Android SDK. Чтобы выбрать графический ресурс и добавить его в проект, для начала найдите папку drawable в окне Project tool (приложение -> res -> drawable) и щелкните по ней правой кнопкой мыши. В появившемся меню (рис. 23-2) выберите пункт меню New -> Vector Asset:
+*/
+
+Figure 23-2
+
+/*
+Once the menu option has been selected, Android Studio will display the Asset Studio dialog shown in Figure 23-3 below:
+
+Как только будет выбран пункт меню, Android Studio отобразит диалоговое окно Asset Studio, показанное на рисунке 23-3 ниже:
+*/
+
+Figure 23-3
+
+/*
+Within the dialog, click on the image to the right of the Clip Art label as indicated by the arrow in the above figure to display a list of available icons. In the search box, enter “cloud” and select the “Cloud Download” icon as shown in Figure 23-4 below:
+
+В диалоговом окне щелкните по изображению справа от метки Clip Art, как указано стрелкой на рисунке выше, чтобы отобразить список доступных иконок. В поле поиска введите “облако” и выберите иконку “Облачная загрузка”, как показано на рисунке 23-4 ниже:
+*/
+
+Figure 23-4
+
+/*
+Click on the OK button to select the drawing and return to the Asset Studio dialog. Increase the size of the image to 150dp x 150dp before clicking the Next button. On the subsequent screen, click on Finish to save the file in the default location.
+
+While changing the image’s color in the Asset Studio dialog was possible, the color selector only allows us to specify colors by RGB value. Instead, we want to use a named color from the project resources. So, in the Project tool window, find and open the colors.xml file under app -> res -> values. This file contains a set of named color properties. In this example, the plan is to use the color named purple_700:
+
+
+Нажмите кнопку OK, чтобы выбрать рисунок и вернуться в диалоговое окно Asset Studio. Увеличьте размер изображения до 150 точек на дюйм x 150 точек на дюйм, прежде чем нажимать кнопку Далее. На следующем экране нажмите кнопку Готово, чтобы сохранить файл в расположении по умолчанию.
+
+Хотя изменение цвета изображения в диалоговом окне Asset Studio было возможно, селектор цветов позволяет нам указывать цвета только по значению RGB. Вместо этого мы хотим использовать именованный цвет из ресурсов проекта. Итак, в окне Project tool найдите и откройте файл colors.xml в разделе app -> res -> values. Этот файл содержит набор именованных свойств цвета. В этом примере планируется использовать цвет с именем purple_700:
+*/
+
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+.
+.
+<color name="purple_700">#FF3700B3</color>
+
+/*
+Having chosen a color from the resources, double-click on the baseline_cloud_download_24.xml vector asset file in the Project tool window to load it into the code editor and modify the android:tint property as follows:
+
+Выбрав цвет из ресурсов, дважды щелкните по файлу векторных ресурсов baseline_cloud_download_24.xml в окне Project tool, чтобы загрузить его в редактор кода и изменить свойство android:tint следующим образом:
+*/
+
+<vector android:height="150dp" android:tint="@color/purple_700"
+android:viewportHeight="24" android:viewportWidth="24"
+android:width="150dp" xmlns:android="http://schemas.android.com/apk/res/
+android">
+<path android:fillColor="@android:color/white" android:pathData="M19.35,10.0
+4C18.67,6.59 15.64,4 12,4 9.11,4 6.6,5.64 5.35,8.04 2.34,8.36 0,10.91 0,14c0,3.31
+2.69,6 6,6h13c2.76,0 5,-2.24 5,-5 0,-2.64 -2.05,-4.78 -4.65,-4.96zM17,13l-5,5
+-5,-5h3V9h4v4h3z"/>
+</vector>
+
+
+
+23.9 Writing the TitleImage composable
+--------------------------------------
+
+/*
+Now that we have an image to display for the title, the next step is to add a composable to the MainActivity.kt file to display the image. To make this composable as reusable as possible, we will design it so that it is passed the image resource to be displayed:
+
+Теперь, когда у нас есть изображение для отображения в заголовке, следующий шаг - добавить компонуемый объект в файл MainActivity.kt для отображения изображения. Чтобы сделать этот компонуемый объект пригодным для повторного использования насколько это возможно, мы спроектируем его так, чтобы ему передавался ресурс изображения для отображения:
+*/
+
+.
+.
+import androidx.compose.foundation.Image
+import androidx.compose.ui.res.painterResource
+.
+.
+@Composable
+fun TitleImage(drawing: Int) {
+  Image(
+    painter = painterResource(drawing),
+    contentDescription = "title image",
+    modifier = Modifier.size(150.dp)
+  )
+}
+
+/*
+The Image component provides several ways to render graphics depending on which parameters are used when it is called. Since we are using a resource image, the component makes a call to the painterResource method to render the image.
+
+Компонент Image предоставляет несколько способов рендеринга графики в зависимости от того, какие параметры используются при его вызове. Поскольку мы используем ресурс изображение, компонент вызывает метод ресурса painter для рендеринга изображения.
+*/
+
+
+
+23.10 Completing the MainScreen composable
+------------------------------------------
+
+/*
+Now that all of the child composables have been added and the state variable and event handlers implemented, it is time to complete work on the MainScreen declaration. Specifically, code needs to be added to this composable to display different content in the two ScreenContent slots depending on the current checkbox selections.
+
+Locate the MainScreen composable in the MainActivity.kt file and add code to call the ScreenContent function as follows:
+
+
+Теперь, когда добавлены все дочерние компонуемые элементы и реализованы переменная состояния и обработчики событий, пришло время завершить работу над объявлением MainScreen. В частности, к этому компонуемому элементу необходимо добавить код для отображения различного содержимого в двух слотах ScreenContent в зависимости от текущего выбора флажка.
+
+Найдите компонуемый элемент MainScreen в файле MainActivity.kt и добавьте код для вызова функции ScreenContent следующим образом:
+*/
+
+@Composable
+fun MainScreen() {
+  var linearSelected by remember { mutableStateOf(true) }
+  var imageSelected by remember { mutableStateOf(true) }
+  val onLinearClick = { value : Boolean ->
+    linearSelected = value
+  }
+  val onTitleClick = { value : Boolean ->
+    imageSelected = value
+  }
+  ScreenContent(
+    linearSelected = linearSelected,
+    imageSelected = imageSelected,
+    onLinearClick = onLinearClick,
+    onTitleClick = onTitleClick,
+    titleContent = {
+      if (imageSelected) {
+        TitleImage(drawing = R.drawable.baseline_cloud_download_24)
+      } else {
+        Text(
+          "Downloading",
+          style = MaterialTheme.typography.headlineSmall,
+          modifier = Modifier.padding(30.dp)
+        )
+      }
+    },
+    progressContent = {
+      if (linearSelected) {
+        LinearProgressIndicator(Modifier.height(40.dp))
+      } else {
+        CircularProgressIndicator(Modifier.size(200.dp),
+        strokeWidth = 18.dp)
+      }
+    }
+  )
+}
+
+/*
+The ScreenContent call begins by passing through the state variables and event handlers which will subsequently be passed down to the two Checkbox instances:
+
+Вызов ScreenContent начинается с передачи переменных состояния и обработчиков событий, которые впоследствии будут переданы двум экземплярам Checkbox:
+*/
+
+ScreenContent(
+  linearSelected = linearSelected,
+  imageSelected = imageSelected,
+  onLinearClick = onLinearClick,
+  onTitleClick = onTitleClick,
+
+/*
+The next parameter deals with the titleContent slot and uses an if statement to pass through either a TitleImage or Text component depending on the current value of the imageSelected state:
+
+Следующий параметр имеет дело со слотом titleContent и использует оператор if для передачи либо изображения заголовка, либо текстового компонента в зависимости от текущего значения состояния imageSelected:
+*/
+
+titleContent = {
+  if (imageSelected) {
+    TitleImage(drawing = R.drawable.baseline_cloud_download_24)
+  } else {
+    Text("Downloading", style = MaterialTheme.typography.headlineSmall,
+    modifier = Modifier.padding(30.dp))
+  }
+},
+
+/*
+Finally, either a linear or circular progress indicator is used to fill ScreenContent’s progressContent slot based on the current value of the linearSelected state:
+
+Наконец, линейный или круговой индикатор прогресса используется для заполнения интервала progressContent в ScreenContent на основе текущего значения состояния linearSelected:
+*/
+
+progressContent = {
+  if (linearSelected) {
+    LinearProgressIndicator(Modifier.height(40.dp))
+  } else {
+    CircularProgressIndicator(Modifier.size(200.dp), strokeWidth = 18.dp)
+  }
+}
+
+/*
+Note that we haven’t passed a progress value through to either of the progress indicators. This will cause the components to enter indeterminate progress mode which will cause them to show a continually cycling indicator.
+
+Обратите внимание, что мы не передали значение прогресса ни одному из индикаторов прогресса. Это приведет к переходу компонентов в режим неопределенного прогресса, что приведет к отображению постоянно повторяющегося индикатора.
+*/
+
+
+
+23.11 Previewing the project
+----------------------------
+
+/*
+With these changes complete, the project is now ready to preview. Locate the DemoPreview composable added earlier in the chapter and modify it to call MainScreen instead of the Checkboxes composable. Also, add the system UI to the preview:
+
+После завершения этих изменений проект теперь готов к предварительному просмотру. Найдите компонуемый элемент DemoPreview, добавленный ранее в этой главе, и измените его, чтобы он вызывал MainScreen вместо компонуемых элементов Checkboxes. Кроме того, добавьте системный пользовательский интерфейс в предварительный просмотр:
+*/
+
+@Preview(showSystemUi = true)
+@Composable
+fun DemoPreview() {
+  MainScreen()
+}
+
+/*
+Once a rebuild has been performed, the Preview panel should resemble that shown in Figure 23-5:
+
+После пересборки макета панель предварительного просмотра должна выглядеть так, как показано на рис. 23-5:
+*/
+
+Figure 23-5
+
+/*
+To test that the project works, start interactive mode by clicking on the button indicated in Figure 23-6:
+
+Чтобы проверить, работает ли проект, запустите интерактивный режим, нажав на кнопку, указанную на рисунке 23-6:
+*/
+
+Figure 23-6
+
+/*
+Once interactive mode has started, experiment with different combinations of checkbox settings to confirm that the slot API for the ScreenContent composable is performing as expected. Figure 23-7, for example, shows the rendering with both checkboxes disabled:
+
+После запуска интерактивного режима поэкспериментируйте с различными комбинациями настроек флажков, чтобы убедиться, что slot API для компонуемого содержимого экрана работает должным образом. На рисунке 23-7, например, показан рендеринг с отключенными обоими флажками:
+*/
+
+Figure 23-7
+
+
+
+23.12 Summary
+-------------
+
+/*
+In this chapter, we have demonstrated the use of a slot API to insert different content into a composable at the point that it is called during runtime. Incidentally, we also passed state variables and event handler references down through multiple levels of composable functions and explored how to use Android Studio’s Asset Studio to select and configure built-in vector drawable assets. Finally, we also used the built-in Image component to render an image within a user interface layout.
+
+
+В этой главе мы продемонстрировали использование slot API для вставки различного содержимого в компонуемый объект в тот момент, когда он вызывается во время выполнения. Кстати, мы также передали переменные состояния и ссылки на обработчики событий на нескольких уровнях компонуемых функций и изучили, как использовать Asset Studio в Android Studio для выбора и настройки встроенных векторных объектов для рисования. Наконец, мы также использовали встроенный компонент Image для рендеринга изображения в макете пользовательского интерфейса.
+*/
+
