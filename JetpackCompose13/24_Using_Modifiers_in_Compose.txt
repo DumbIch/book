@@ -1,0 +1,485 @@
+24. Using Modifiers in Compose
+==============================
+
+/*
+In this chapter, we will introduce Compose modifiers and explain how they can be used to customize the appearance and behavior of composables. Topics covered will include an overview of modifiers and an introduction to the Modifier object. The chapter will also explain how to create and use modifiers, and how to add modifier support to your own composables.
+
+В этой главе мы представим модификаторы Compose и объясним, как их можно использовать для настройки внешнего вида и поведения компонуемых элементов. Рассматриваемые темы будут включать обзор модификаторов и введение в объект Modifier. В этой главе также будет объяснено, как создавать и использовать модификаторы, а также как добавить поддержку модификаторов в ваш собственный компонуемый элемент.
+*/
+
+
+
+24.1 An overview of modifiers
+-----------------------------
+
+/*
+Many composables accept one or more parameters that define their appearance and behavior within the running app. We can, for example, specify the font size and weight of a Text composable by passing through parameters as follows:
+
+Многие компонуемые объекты принимают один или несколько параметров, определяющих их внешний вид и поведение в запущенном приложении. Мы можем, например, указать размер и вес шрифта для компонуемого элемента Text, передав параметры следующим образом:
+*/
+
+@Composable
+fun DemoScreen() {
+  Text(
+    "My Vacation",
+    fontSize = 40.sp,
+    fontWeight = FontWeight.Bold
+  )
+}
+
+/*
+In addition to parameters of this type, most built-in composables also accept an optional modifier parameter which allows additional aspects of the composable to be configured. Unlike parameters, which are generally specific to the type of composable (a font setting would have no meaning to a Column component for example), modifiers are more general in that they can be applied to any composable.
+
+The foundation for building modifiers is the Modifier object. Modifier is a built-in Compose object designed to store configuration settings that can be applied to composables. The Modifier object provides a wide selection of methods that can be called upon to configure properties such as borders, padding, background, size requirements, event handlers, and gestures to name just a few. Once declared, a Modifier can be passed to other composables and used to change appearance and behavior.
+
+In the remainder of this chapter, we will explore the key concepts of modifiers and demonstrate their use within an example project.
+
+
+
+В дополнение к параметрам этого типа большинство встроенных компонуемых объектов также принимают необязательный параметр-модификатор, который позволяет настраивать дополнительные аспекты компонуемого объекта. В отличие от параметров, которые обычно специфичны для типа компонуемого объекта (например, настройка шрифта не будет иметь значения для компонента столбца), модификаторы являются более общими в том смысле, что они могут быть применены к любому компонуемому объекту.
+
+Основой для создания модификаторов является объект Modifier. Modifier - это встроенный объект Compose, предназначенный для хранения параметров конфигурации, которые могут быть применены к компонуемым объектам. Объект-модификатор предоставляет широкий выбор методов, которые могут быть вызваны для настройки таких свойств, как границы, отступы, фон, требования к размеру, обработчики событий и жесты, и это лишь некоторые из них. После объявления модификатор может быть передан другим компонуемым элементам и использован для изменения внешнего вида и поведения.
+
+В оставшейся части этой главы мы рассмотрим ключевые концепции модификаторов и продемонстрируем их использование в рамках примера проекта.
+*/
+
+
+
+24.2 Creating the ModifierDemo project
+--------------------------------------
+
+/*
+Launch Android Studio and select the New Project option from the welcome screen. Within the new project dialog, choose the Empty Activity template before clicking on the Next button.
+
+Enter ModifierDemo into the Name field and specify com.example.modifierdemo as the package name. Before clicking on the Finish button, change the Minimum API level setting to API 26: Android 8.0 (Oreo). Once the project has been created, the project files should be listed in the Project tool window located along the left-hand edge of the Android Studio main window.
+
+Load the MainActivity.kt file into the code editor and delete the Greeting composable before making the following changes:
+
+
+
+Запустите Android Studio и выберите опцию "Создать проект" на экране приветствия. В диалоговом окне "Создать проект" выберите пустой шаблон Empty Activity, прежде чем нажать кнопку "Далее".
+
+Введите ModifierDemo в поле "Имя" и укажите com.example.modifierdemo в качестве имени пакета. Прежде чем нажать на кнопку Готово, измените настройку минимального уровня API на API 26: Android 8.0 (Oreo). Как только проект будет создан, файлы проекта должны быть перечислены в окне Project tool, расположенном вдоль левого края главного окна Android Studio.
+
+Загрузите файл MainActivity.kt в редактор кода и удалите компонуемую функцию Greeting, прежде чем вносить следующие изменения:
+*/
+
+package com.example.modifierdemo
+.
+.
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.text.font.FontWeight
+.
+.
+class MainActivity : ComponentActivity() {
+  override fun onCreate(savedInstanceState: Bundle?) {
+    super.onCreate(savedInstanceState)
+    setContent {
+      Surface(
+        modifier = Modifier.fillMaxSize(),
+        color = MaterialTheme.colorScheme.background
+      ) {
+        DemoScreen()
+      }
+    }
+  }
+}
+
+@Composable
+fun DemoScreen() {
+  Text(
+    "Hello Compose",
+    fontSize = 40.sp,
+    fontWeight = FontWeight.Bold
+  )
+}
+
+@Preview(showBackground = true)
+@Composable
+fun DefaultPreview() {
+  ModifierDemoTheme {
+    DemoScreen()
+  }
+}
+
+
+
+24.3 Creating a modifier
+------------------------
+
+/*
+The first step in learning to work with modifiers is to create one. To begin with, we can create a modifier without any configuration settings as follows:
+
+Первым шагом в обучении работе с модификаторами является их создание. Для начала мы можем создать модификатор без каких-либо настроек конфигурации следующим образом:
+*/
+
+val modifier = Modifier
+
+/*
+This essentially gives us a blank modifier containing no configuration settings. To configure the modifier, we need to call methods on it. For example, the modifier can be configured to add 10dp of padding on all four sides of any composable to which it is applied:
+
+По сути, это дает нам пустой модификатор, не содержащий параметров конфигурации. Чтобы настроить модификатор, нам нужно вызвать для него методы. Например, модификатор можно настроить так, чтобы он добавлял 10 точек отступа на все четыре стороны любого составного элемента, к которому он применяется:
+*/
+
+val modifier = Modifier.padding(all = 10.dp)
+
+/*
+Method calls on a Modifier instance may be chained together to apply multiple configuration settings in a single operation. The following addition to the modifier will draw a black, 2dp wide border around a composable:
+
+Вызовы методов экземпляра модификатора могут быть объединены в цепочку для применения нескольких параметров конфигурации в одной операции. Следующее дополнение к модификатору обведет компонуемый объект черной рамкой шириной 2dp:
+*/
+
+val modifier = Modifier
+  .padding(all = 10.dp)
+  .border(width = 2.dp, color = Color.Black)
+
+/*
+Once a modifier has been created it can be passed to any composable which accepts a modifier parameter. Edit the DemoScreen function so that it reads as follows to pass our modifier to the Text composable:
+
+Как только модификатор создан, его можно передать любому компонуемому объекту, который принимает параметр модификатора. Отредактируйте функцию DemoScreen так, чтобы она выглядела следующим образом, чтобы передать наш модификатор компонуемому объекту Text:
+*/
+.
+.
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.unit.dp
+.
+.
+@Composable
+fun DemoScreen() {
+  val modifier = Modifier
+    .border(width = 2.dp, color = Color.Black)
+    .padding(all = 10.dp)
+  Text(
+    "Hello Compose",
+    modifier = modifier,
+    fontSize = 40.sp,
+    fontWeight = FontWeight.Bold
+  )
+}
+
+/*
+When the layout is previewed it should appear as illustrated in Figure 24-1:
+
+При предварительном просмотре макета он должен выглядеть так, как показано на рисунке 24-1:
+*/
+
+Figure 24-1
+
+/*
+As we can see from the preview, the padding and border have been applied to the text. Clearly, the Text composable has been implemented such that it accepts a modifier as a parameter. If a composable accepts a modifier it will always be the first optional parameter in the parameter list. This has the added benefit of allowing the modifier to be passed without declaring the argument name. The following, therefore, is syntactically correct:
+
+Как мы можем видеть из предварительного просмотра, к тексту были применены отступ и граница. Очевидно, что компонуемый элемент Text был реализован таким образом, что он принимает модификатор в качестве параметра. Если компонуемый объект принимает модификатор, он всегда будет первым необязательным параметром в списке параметров. Это соглашение имеет дополнительное преимущество, позволяя передавать модификатор без объявления имени аргумента. Таким образом, следующее является синтаксически правильным:
+*/
+
+Text(
+  "Hello Compose",
+  modifier,
+  fontSize = 40.sp,
+  fontWeight = FontWeight.Bold
+)
+
+
+
+24.4 Modifier ordering
+----------------------
+
+/*
+The order in which modifiers are chained is of great significance to the resulting output. In the above example, the border was applied first followed by the padding. This has the result of the border appearing outside the padding. To place the border inside the padding, the order of the modifiers needs to be swapped as follows:
+
+Порядок, в котором модификаторы объединены в цепочку, имеет большое значение для результирующего вывода. В приведенном выше примере сначала была применена граница, за которой последовало заполнение. В результате граница появляется за пределами заполнения. Чтобы поместить границу внутри отступа, порядок расположения модификаторов необходимо поменять следующим образом:
+*/
+
+val modifier = Modifier
+  .padding(all = 10.dp)
+  .border(width = 2.dp, color = Color.Black)
+
+/*
+When previewed, the Text composable will appear as shown in Figure 24-2 below:
+
+При предварительном просмотре компонуемый элемент Text будет выглядеть так, как показано на рисунке 24-2 ниже:
+*/
+
+Figure 24-2
+
+/*
+If you don’t see the expected effects when working with chained modifiers, keep in mind this may be because of the order in which they are being applied to the component.
+
+Если вы не видите ожидаемых эффектов при работе с цепочкой модификаторов, имейте в виду, что это может быть связано с порядком, в котором они применяются к компоненту.
+*/
+
+
+
+24.5 Adding modifier support to a composable
+--------------------------------------------
+
+/*
+So far in this chapter, we have shown how to create a modifier and use it with a built-in composable. When developing your own composables it is important to consider whether modifier support should be included to make the function more configurable.
+
+When adding modifier support to a composable the first rule is that the parameter should be named “modifier” and must be the first optional parameter in the function’s parameter list. As an example, we can add a new composable named CustomImage to our project which accepts as parameters the image resource to display and a modifier. Edit the MainActivity.kt file and add this composable so that it reads as follows:
+
+
+До сих пор в этой главе мы показывали, как создать модификатор и использовать его со встроенными компонуемыми элементами. При разработке собственного компонуемого элемента важно учитывать, следует ли включать поддержку модификатора, чтобы сделать функцию более настраиваемой.
+
+При добавлении поддержки модификатора к компонуемому объекту первое правило заключается в том, что параметр должен называться “modifier” и должен быть ПЕРВЫМ НЕОБЯЗАТЕЛЬНЫМ параметром в списке параметров функции. В качестве примера, мы можем добавить в наш проект новый компонуемый объект с именем CustomImage, который принимает в качестве параметров ресурс изображения для отображения и модификатор. Отредактируйте файл MainActivity.kt и добавьте этот компонуемый объект так, чтобы он выглядел следующим образом:
+*/
+
+.
+.
+import androidx.compose.foundation.Image
+import androidx.compose.ui.res.painterResource
+.
+.
+@Composable
+fun CustomImage(image: Int) {
+  Image(
+    painter = painterResource(image),
+    contentDescription = null
+  )
+}
+
+/*
+As currently declared, the function only accepts one parameter in the form of the image resource. The next step is to add the modifier parameter:
+
+На данный момент функция принимает только один параметр в виде ресурса изображения. Следующим шагом является добавление параметра-модификатора:
+*/
+
+@Composable
+fun CustomImage(image: Int, modifier: Modifier) {
+  Image(
+    painter = painterResource(image),
+    contentDescription = null
+  )
+}
+
+/*
+It is important to remember that the modifier parameter must be optional so that the function can be called without one. This means that we need to specify an empty Modifier instance as the default for the parameter:
+
+Важно помнить, что параметр-модификатор должен быть необязательным, чтобы функция могла быть вызвана без него. Это означает, что нам нужно указать пустой экземпляр Modifier в качестве параметра по умолчанию:
+*/
+
+@Composable
+fun CustomImage(image: Int, modifier: Modifier = Modifier) {
+.
+.
+
+/*
+Finally, we need to make sure that the modifier is applied to the Image composable, keeping in mind that it will be the first optional parameter:
+
+Наконец, нам нужно убедиться, что модификатор применен к компонуемому изображению, имея в виду, что это будет первый необязательный параметр:
+*/
+
+@Composable
+fun CustomImage(image: Int, modifier: Modifier = Modifier) {
+  Image(
+    painter = painterResource(image),
+    contentDescription = null,
+    modifier
+  )
+}
+
+/*
+Now that we have created a new composable with modifier support we are almost ready to call it from the DemoScreen function. First, however, we need to add an image resource to the project. The image is named vacation.jpg and can be found in the images folder of the sample code archive which can be downloaded from the following web page:
+
+Теперь, когда мы создали новый компонуемый объект с поддержкой модификаторов, мы почти готовы вызвать его из функции DemoScreen. Однако сначала нам нужно добавить в проект ресурс изображения. Изображение называется vacation.jpg и его можно найти в папке images архива примеров кода, который можно загрузить со следующей веб-страницы:
+*/
+
+https://www.ebookfrenzy.com/retail/compose13/index.php
+
+/*
+Within Android Studio, display the Resource Manager tool window (View -> Tool Windows -> Resource Manager). Locate the vacation.png image in the file system navigator for your operating system and drag and drop it onto the Resource Manager tool window. In the resulting dialog, click Next followed by the Import button to add the image to the project. The image should now appear in the Resource Manager as shown in Figure 24-3 below:
+
+В Android Studio откройте окно инструмента "Диспетчер ресурсов" (Вид -> Окна инструментов -> Диспетчер ресурсов). Найдите изображение vacation.png в навигаторе файловой системы вашей операционной системы и перетащите его в окно инструмента "Диспетчер ресурсов". В появившемся диалоговом окне нажмите Далее, а затем кнопку Импорт, чтобы добавить изображение в проект. Теперь изображение должно появиться в диспетчере ресурсов, как показано на рисунке 24-3 ниже:
+*/
+
+Figure 24-3
+
+/*
+The image will also appear in the res -> drawables section of the Project tool window:
+
+Изображение также появится в разделе res -> drawable в окне Project tool:
+*/
+
+Figure 24-4
+
+/*
+Next, modify the DemoScreen composable to include a call to the CustomImage component:
+
+Затем измените компонуемый элемент DemoScreen, чтобы включить вызов пользовательского компонента изображения CustomImage:
+*/
+
+.
+.
+import androidx.compose.ui.Alignment
+import androidx.compose.foundation.layout.*
+.
+.
+
+
+@Composable
+fun DemoScreen() {
+  val modifier = Modifier
+    .border(width = 2.dp, color = Color.Black)
+    .padding(all = 10.dp)
+  Column(
+    Modifier.padding(20.dp),
+    horizontalAlignment = Alignment.CenterHorizontally,
+    verticalArrangement = Arrangement.Center
+  ) {
+    Text(
+      "Hello Compose",
+      modifier = modifier,
+      fontSize = 40.sp,
+      fontWeight = FontWeight.Bold
+    )
+    Spacer(Modifier.height(16.dp))
+    CustomImage(R.drawable.vacation)
+  }
+}
+.
+.
+
+/*
+Refresh and build the preview and verify that the layout matches that shown in Figure 24-5 below:
+
+Запустите обновление макета в панели предварительного просмотра и убедитесь, что вид макета соответствует показанному на рисунке 24-5 ниже:
+*/
+
+Figure 24-5
+
+/*
+At this point, the Image component is using the default Modifier instance that we declared in the CustomImage function signature. To change this we need to construct a custom modifier and pass it through to CustomImage to modify the appearance on the image resource when it is displayed:
+
+На данный момент компонент Image использует экземпляр Modifier по умолчанию, объявленный в сигнатуре функции CustomImage. Чтобы изменить внешний вид ресурса изображения при его отображении нам нужно создать пользовательский модификатор и передать его в CustomImage:
+*/
+
+.
+.
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
+.
+.
+Spacer(Modifier.height(16.dp))
+CustomImage(
+  R.drawable.vacation,
+  Modifier
+    .padding(16.dp)
+    .width(270.dp)
+    .clip(shape = RoundedCornerShape(30.dp))
+)
+.
+.
+
+/*
+The preview should now display the image with padding, fixed width, and rounded corners:
+
+Теперь в окне предварительного просмотра должно отображаться изображение с отступами, фиксированной ширины и с закругленными углами:
+*/
+
+Figure 24-6
+
+
+
+24.6 Common built-in modifiers
+------------------------------
+
+/*
+A list of the full set of Modifier methods is beyond the scope of this book (there are currently over 100). For a detailed and complete list of methods, refer to the Compose documentation at the following URL:
+
+Список полного набора методов-модификаторов выходит за рамки данной книги (в настоящее время их более 100). Подробный и полный список методов приведен в документации Compose по следующему URL:
+*/
+
+https://developer.android.com/reference/kotlin/androidx/compose/ui/Modifier
+
+/*
+The following is a selection of some of the more commonly used functions:
+• background - Draws a solid colored shape behind the composable.
+• clickable - Specifies a handler to be called when the composable is clicked. Also causes a ripple effect when the click is performed.
+• clip - Clips the composable content to a specified shape.
+• fillMaxHeight - The composable will be sized to fit the maximum height permitted by its parent.
+• fillMaxSize - The composable will be sized to fit the maximum height and width permitted by its parent.
+• fillMaxWidth - The composable will be sized to fit the maximum width permitted by its parent.
+• layout - Used when implementing custom layout behavior, a topic covered in the chapter entitled “Building Custom Layouts”.
+• offset - Positions the composable the specified distance from its current position along the x and y-axis.
+• padding - Adds space around a composable. Parameters can be used to apply spacing to all four sides or to specify different padding for each side.
+• rotate - Rotates the composable on its center point by a specified number of degrees.
+• scale - Increase or reduce the size of the composable by the specified scale factor.
+• scrollable - Enables scrolling for a composable that extends beyond the viewable area of the layout in which it is contained.
+• size - Used to specify the height and width of a composable. In the absence of a size setting, the composable will be sized to accommodate its content (referred to as wrapping).
+
+
+Ниже приведена подборка некоторых из наиболее часто используемых функций:
+• background - рисует сплошную цветную фигуру за компонуемым объектом.
+• clickable - указывает обработчик, который будет вызываться при щелчке по компонуемому объекту. Также вызывает волновой эффект при выполнении щелчка.
+• clip - обрезает компонуемый контент до заданной формы.
+• fillMaxHeight - Размер компонуемого объекта будет соответствовать максимальной высоте, разрешенной его родительским элементом.
+• fillMaxSize - Размер компонуемого объекта будет соответствовать максимальной высоте и ширине, разрешенным его родительским элементом.
+• fillMaxWidth - размер компонуемого элемента будет соответствовать максимальной ширине, разрешенной его родительским элементом.
+• layout (макет) - используется при реализации пользовательского поведения макета, тема рассмотрена в главе, озаглавленной “Создание пользовательских макетов”.
+• offset (смещение) - позиционирует компонуемый объект на указанное расстояние от его текущего положения вдоль осей x и y.
+• padding (отступ) - Добавляет пространство вокруг компонуемого объекта. Параметры можно использовать для применения интервала ко всем четырем сторонам или для указания различного отступа для каждой стороны.
+• rotate (повернуть) - поворачивает компонуемый объект относительно его центральной точки на заданное количество градусов.
+• scale (масштабировать) - увеличить или уменьшить размер компонуемого объекта на указанный масштабный коэффициент.
+• scrollable (прокручиваемый) - позволяет прокручивать компонуемый объект, который выходит за пределы видимой области макета, в котором он содержится.
+• size (размер) - Используется для указания высоты и ширины компонуемого объекта. При отсутствии настройки размера компонуемый объект будет иметь размер, соответствующий его содержимому (так называемая "обертка").
+*/
+
+
+
+24.7 Combining modifiers
+------------------------
+
+/*
+When working with Compose, situations may arise where you have two or more Modifier objects, all of which need to be applied to the same composable. For this situation, Compose allows modifiers to be combined using the then keyword. The syntax for using this is as follows:
+
+При работе с Compose могут возникнуть ситуации, когда у вас есть два или более объекта-модификатора, все из которых необходимо применить к одному и тому же компонуемому объекту. В этой ситуации Compose позволяет комбинировать модификаторы с помощью ключевого слова then. Синтаксис для использования этого следующий:
+*/
+
+val combinedModifier = firstModifier.then(secondModifier).then(thirdModifier) ...
+
+/*
+The result will be a modifier that contains the configurations of all specified modifiers. To see this in action, modify the MainActivity.kt file to add a second modifier for use with the Text composable:
+
+Результатом будет модификатор, содержащий конфигурации всех указанных модификаторов. Чтобы увидеть это в действии, измените файл MainActivity.kt, чтобы добавить второй модификатор для использования с компонуемым элементом Text:
+*/
+
+.
+.
+val modifier = Modifier
+  .border(width = 2.dp, color = Color.Black)
+  .padding(all = 10.dp)
+val secondModifier = Modifier.height(100.dp)
+.
+.
+
+/*
+Next, change the Text call to combine both modifiers:
+
+Затем измените вызов компонуемого элемента Text, чтобы объединить оба модификатора:
+*/
+
+Text(
+  "Hello Compose",
+  modifier.then(secondModifier),
+  fontSize = 40.sp,
+  fontWeight = FontWeight.Bold
+)
+
+/*
+The Text composable should now appear in the preview panel with a height of 100dp in addition to the original font, border, and padding settings.
+
+Теперь компонуемый элемент Text должен отображаться на панели предварительного просмотра с высотой 100 точек на дюйм в дополнение к исходным настройкам шрифта, рамки и отступов.
+*/
+
+
+
+24.8 Summary
+------------
+
+/*
+Modifiers are created using instances of the Compose Modifier object and are passed as parameters to composables to change appearance and behavior. A modifier is configured by calling methods on the Modifier object to define settings such as size, padding, rotation, and background color. Most of the built-in composables provided with the Compose system will accept a modifier as a parameter. It is also possible (and recommended) to add modifier support to your own composable functions. If a composable function accepts a modifier, it will always be the first optional parameter in the function’s parameter list, but positioned after any mandatory parameters. Multiple modifier instances may be combined using the then keyword before being applied to a component.
+
+Модификаторы создаются с использованием экземпляров объекта Compose Modifier и передаются в качестве параметров компонуемым объектам для изменения внешнего вида и поведения. Модификатор настраивается путем вызова методов объекта Modifier для определения таких параметров, как размер, заполнение, поворот и цвет фона. Большинство встроенных компонуемых элементов, поставляемых с системой Compose, будут принимать модификатор в качестве параметра. Также возможно (и рекомендуется) добавить поддержку модификаторов в ваши собственные компонуемые функции. Если компонуемая функция принимает модификатор, он всегда будет ПЕРВЫМ НЕОБЯЗАТЕЛЬНЫМ параметром в списке параметров функции, но будет располагаться после любых обязательных параметров. Несколько экземпляров модификатора могут быть объединены с помощью ключевого слова then перед применением к компоненту.
+*/
+
