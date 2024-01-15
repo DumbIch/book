@@ -1,0 +1,415 @@
+25. Annotated Strings and Brush Styles
+======================================
+
+/*
+The previous chapter explored how we use modifiers to change the appearance and behavior of composables. Many examples used to demonstrate modifiers involved the Text composable, performing tasks such as changing the font type, size, and weight. This chapter will introduce another powerful text-related feature of Jetpack Compose, known as annotated strings. We will also look at brush styles and how they can be used to add more effects to the text in a user interface.
+
+В предыдущей главе было рассмотрено, как мы используем модификаторы для изменения внешнего вида и поведения компонуемых элементов. Многие примеры, использованные для демонстрации модификаторов, включали компонуемый элемент Text, выполняя такие задачи, как изменение типа шрифта, размера и веса. В этой главе мы познакомимся с другой мощной функцией Jetpack Compose, связанной с текстом, известной как аннотированные строки. Мы также рассмотрим стили кисти и то, как их можно использовать для добавления дополнительных эффектов к тексту в пользовательском интерфейсе.
+*/
+
+
+
+25.1 What are annotated strings?
+--------------------------------
+
+/*
+The previous chapter’s modifier examples changed the appearance of the entire string displayed by a Text composable. For instance, we could not display part one part of the text in bold while another section was in italics. It is for this reason that Jetpack Compose includes the annotated strings.
+
+Annotated strings allow a text to be divided into multiple sections, each with its own style.
+
+
+Примеры модификаторов в предыдущей главе изменили внешний вид всей строки, отображаемой компонуемым текстом. Например, мы не смогли отобразить одну часть текста жирным шрифтом, в то время как другая часть была выделена курсивом. Именно по этой причине Jetpack Compose включает аннотированные строки.
+
+Аннотированные строки позволяют разделить текст на несколько разделов, каждый из которых имеет свой собственный стиль.
+*/
+
+
+
+25.2 Using annotated strings
+----------------------------
+
+/*
+An AnnotatedString instance is created by calling the buildAnnotatedString function and passing it the text and styles to be displayed. These string sections are combined via calls to the append function to create the complete text to be displayed.
+
+Two style types are supported, the first of which, SpanStyle, is used to apply styles to a span of individual characters within a string. The syntax for building an annotated string using SpanStyle is as follows:
+
+
+Экземпляр AnnotatedString создается путем вызова функции buildAnnotatedString и передачи ей текста и стилей, которые будут отображаться. Эти секции строк объединяются с помощью вызовов функции append для создания полного текста, который будет отображаться.
+
+Поддерживаются два типа стилей, первый из которых, SpanStyle, используется для применения стилей к диапазону отдельных символов в строке. Синтаксис для создания аннотированной строки с использованием стиля SpanStyle следующий:
+*/
+
+buildAnnotatedString {
+  withStyle(style = SpanStyle( /* style settings */)) {
+    append(/* text string */)
+  }
+  withStyle(style = SpanStyle(/* style settings */)) {
+    append(/* more text */)
+  }
+.
+.
+}
+
+/*
+A SpanStyle instance can be initialized with any combination of the following style options:
+Экземпляр SpanStyle может быть инициализирован любой комбинацией следующих параметров стиля:
+• color
+• fontSize
+• fontWeight
+• fontStyle
+• fontSynthesis
+• fontFamily
+• fontFeatureSettings
+• letterSpacing
+• baselineShift,
+• textGeometricTransform
+• localeList
+• background
+• textDecoration
+• shadow
+
+ParagraphStyle, on the other hand, applies a style to paragraphs and can be used to modify the following properties:
+ParagraphStyle, с другой стороны, применяет стиль к абзацам и может использоваться для изменения следующих свойств:
+• textAlign
+• textDirection
+• lineHeight
+• textIndent
+
+The following is the basic syntax for using paragraph styles in annotated strings:
+Ниже приведен базовый синтаксис для использования стилей абзацев в аннотированных строках:
+*/
+
+buildAnnotatedString {
+  withStyle(style = ParagraphStyle( /* style settings */)) {
+    append(/* text string */)
+  }
+  withStyle(style = ParagraphStyle(/* style settings */)) {
+    append(/* more text */)
+  }
+.
+.
+}
+
+
+
+25.3 Brush Text Styling
+-----------------------
+
+/*
+Additional effects may be added to any text by using the Compose Brush styling. Brush effects can be applied directly to standard text strings or selectively to segments of an annotated string. For example, the following syntax applies a radial color gradient to a Text composable (color gradients will be covered in the chapter entitled “Canvas Graphics Drawing in Compose”):
+
+Дополнительные эффекты могут быть добавлены к любому тексту с помощью стиля Compose Brush. Эффекты кисти могут быть применены непосредственно к стандартным текстовым строкам или выборочно к сегментам аннотированной строки. Например, следующий синтаксис применяет радиальный цветовой градиент к компонуемому тексту (цветовые градиенты будут рассмотрены в главе “Рисование графики на холсте в Compose”).:
+*/
+
+val myColors = listOf( /* color list */)
+Text(
+  text = "text here",
+  style = TextStyle(
+    brush = Brush.radialGradient(
+      colors = myColors
+    )
+  )
+)
+
+
+
+25.4 Creating the example project
+---------------------------------
+
+/*
+Launch Android Studio and select the New Project option from the welcome screen. Choose the Empty Activity template within the New Project dialog before clicking the Next button.
+
+Enter StringsDemo into the Name field and specify com.example.stringsdemo as the package name. Before clicking the Finish button, change the Minimum API level setting to API 26: Android 8.0 (Oreo). Once the project has been created, the SlotApiDemo project should be listed in the Project tool window along the left-hand edge of the Android Studio main window.
+
+Within the MainActivity.kt file, delete the Greeting function and add a new empty composable named MainScreen:
+
+
+Запустите Android Studio и выберите опцию "Создать проект" на экране приветствия. Выберите пустой шаблон действия в диалоговом окне "Создать проект", прежде чем нажать кнопку "Далее".
+
+Введите StringsDemo в поле "Имя" и укажите com.example.stringsdemo в качестве имени пакета. Прежде чем нажать кнопку Готово, измените настройку минимального уровня API на API 26: Android 8.0 (Oreo). Как только проект будет создан, демонстрационный проект SlotApiDemo должен быть указан в окне инструментов проекта вдоль левого края главного окна Android Studio.
+
+В файле MainActivity.kt удалите функцию Greeting и добавьте новую пустую компонуемую функцию с именем MainScreen:
+*/
+
+@Composable
+fun MainScreen() {
+}
+
+/*
+Next, edit the OnCreate() method and GreetingPreview function to call MainScreen instead of Greeting.
+
+Затем отредактируйте метод onCreate() и функцию GreetingPreview, чтобы вызвать MainScreen вместо Greeting.
+*/
+
+
+
+25.5 An example SpanStyle annotated string
+------------------------------------------
+
+/*
+The first example we will create uses SpanStyle to build an annotated string consisting of multiple color and font styles.
+
+Begin by editing the MainActivity.kt file and modifying the MainScreen function to read as follows:
+
+
+В первом примере, который мы создадим, используется SpanStyle для создания аннотированной строки, состоящей из нескольких стилей цвета и шрифта.
+
+Начните с редактирования файла MainActivity.kt и изменения функции MainScreen следующим образом:
+*/
+.
+.
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.foundation.layout.Column
+import androidx.compose.ui.unit.sp
+.
+.
+@Composable
+fun MainScreen() {
+  Column {
+    SpanString()
+  }
+}
+
+/*
+Next, add the SpanString declaration to the MainActivity.kt file as follows:
+
+Затем добавьте объявление SpanString в файл MainActivity.kt следующим образом:
+*/
+
+@Composable
+fun SpanString() {
+  Text(
+    buildAnnotatedString {
+      withStyle(
+        style = SpanStyle(
+          fontWeight = FontWeight.Bold,
+          fontSize = 30.sp
+        )
+      ) {
+        append("T")
+      }
+      withStyle(
+        style = SpanStyle(
+          color = Color.Gray
+        )
+      ) {
+        append("his")
+      }
+      append(" is ")
+      withStyle(
+        style = SpanStyle(
+          fontWeight = FontWeight.Bold,
+          fontStyle = FontStyle.Italic,
+          color = Color.Blue
+        )
+      ) {
+        append("great!")
+      }
+    }
+  )
+}
+
+/*
+The example code creates an annotated string in three parts using several span styles for each section. After making these changes, refer to the Preview panel, where the text should appear as shown in Figure 25-1:
+
+Приведенный в примере код создает аннотированную строку из трех частей, используя несколько стилей диапазона для каждого раздела. После внесения этих изменений обратитесь к панели предварительного просмотра, где текст должен отображаться так, как показано на рисунке 25-1:
+*/
+
+Figure 25-1
+
+
+
+25.6 An example ParagraphStyle annotated string
+-----------------------------------------------
+
+/*
+Now that we have seen how to create a span-style annotated string, the next step is to build a paragraph-style string. Remaining in the MainActivity.kt file, make the following changes to add a new function named ParaString and to call it from the MainScreen function:
+
+Теперь, когда мы увидели, как создать аннотированную строку в стиле span, следующий шаг - создать строку в стиле paragraph. Оставаясь в файле MainActivity.kt, внесите следующие изменения, чтобы добавить новую функцию с именем ParaString и вызвать ее из функции MainScreen:
+*/
+
+.
+.
+import androidx.compose.ui.text.ParagraphStyle
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextIndent
+.
+.
+@Composable
+fun MainScreen() {
+  Column {
+    SpanString()
+    ParaString()
+  }
+}
+
+@Composable
+fun ParaString() {
+  Text(
+    buildAnnotatedString {
+      append("\nThis is some text that doesn't have any style applied to it.\n")
+    }
+  )
+}
+
+/*
+The above code gives us an unmodified paragraph against which we can compare the additional paragraphs we will add. Next, modify the function to add an indented paragraph with an increased line height:
+
+Приведенный выше код дает нам неизмененный абзац, с которым мы можем сравнить дополнительные абзацы, которые мы добавим. Далее измените функцию, чтобы добавить абзац с отступом и увеличенной высотой строки:
+*/
+
+@Composable
+fun ParaString() {
+  Text(
+    buildAnnotatedString {
+      append("\nThis is some text that doesn't have any style applied to it.\n")
+      withStyle(
+        style = ParagraphStyle(
+          lineHeight = 30.sp,
+          textIndent = TextIndent(
+            firstLine = 60.sp,
+            restLine = 25.sp
+          )
+        )
+      ) {
+        append("This is some text that is indented more on the first lines than the rest of the lines. It also has an increased line height.\n")
+      }
+    }
+  )
+}
+
+/*
+When the preview is rendered, it should resemble Figure 25-2 (note that we specified different indents for the first and remaining lines):
+
+Когда предварительный просмотр будет отрисован, он должен выглядеть как на рисунке 25-2 (обратите внимание, что мы указали разные отступы для первой и остальных строк).:
+*/
+
+Figure 25-2
+
+/*
+Next, add a third paragraph that uses right alignment as follows:
+
+Затем добавьте третий абзац, в котором используется выравнивание по правому краю следующим образом:
+*/
+
+@Composable
+fun ParaString() {
+.
+.
+      append("This is some text that is indented more on the first lines than the rest of the lines. It also has an increased line height.\n")
+    }
+    withStyle(style = ParagraphStyle(textAlign = TextAlign.End)) {
+      append("This is some text that is right aligned.")
+    }
+  })
+}
+
+/*
+This change should result in the following preview:
+
+Это изменение должно привести к отображению следующего вида на панели предварительного просмотра:
+*/
+
+Figure 25-3
+
+
+
+25.7 A Brush style example
+--------------------------
+
+/*
+The final example in this tutorial involves using the Brush style to change the text’s appearance. First, add another function to the MainActivity.kt file and call it from within the MainScreen function:
+
+Последний пример в этом руководстве включает использование стиля кисти для изменения внешнего вида текста. Сначала добавьте другую функцию в файл MainActivity.kt и вызовите ее из функции MainScreen:
+*/
+
+.
+.
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.text.ExperimentalTextApi
+.
+.
+@Composable
+fun MainScreen() {
+  Column {
+    SpanString()
+    ParaString()
+    BrushStyle()
+  }
+}
+
+@OptIn(ExperimentalTextApi::class)
+@Composable
+fun BrushStyle() {
+}
+
+/*
+We will begin by declaring a list of colors and use a span style to display large, bold text as follows:
+
+Мы начнем с объявления списка цветов и будем использовать стиль span для отображения большого, выделенного жирным шрифтом текста следующим образом:
+*/
+
+@OptIn(ExperimentalTextApi::class)
+@Composable
+fun BrushStyle() {
+  val colorList: List<Color> = listOf(Color.Red, Color.Blue, Color.Magenta, Color.Yellow, Color.Green, Color.Red)
+  Text(
+    text = buildAnnotatedString {
+      withStyle(
+        style = SpanStyle(
+          fontWeight = FontWeight.Bold,
+          fontSize = 70.sp
+        )
+      ) {
+        append("COMPOSE!")
+      }
+    }
+  )
+}
+
+/*
+All that remains is to apply a linearGradient brush to the style, using the previously declared color list:
+
+Все, что остается, - это применить кисть linearGradient к стилю, используя ранее объявленный список цветов:
+*/
+
+@OptIn(ExperimentalTextApi::class)
+@Composable
+fun BrushStyle() {
+  Text(
+    text = buildAnnotatedString {
+      withStyle(
+        style = SpanStyle(
+          fontWeight = FontWeight.Bold,
+          fontSize = 70.sp,
+          brush = Brush.linearGradient(colors = colorList)
+        )
+      ) {
+        append("COMPOSE!")
+.
+.
+
+/*
+After completing the above changes, check that the new text appears in the preview panel as illustrated in Figure 39-3:
+
+После внесения вышеуказанных изменений убедитесь, что новый текст отображается на панели предварительного просмотра, как показано на рисунке 39-3:
+*/
+
+Figure 25-4
+
+
+
+25.8 Summary
+------------
+
+/*
+While modifiers provide a quick and convenient way to make changes to the appearance of text in a user interface, they do not support multiple styles within a single string. On the other hand, annotated strings provide greater flexibility in changing the appearance of text. Annotated strings are built using the buildAnnotatedString function and can be configured using either span or paragraph styles. Another option for altering how text appears is using the Brush style to change the text foreground creatively, such as using color gradients.
+
+Хотя модификаторы обеспечивают быстрый и удобный способ внесения изменений в внешний вид текста в пользовательском интерфейсе, они не поддерживают несколько стилей в пределах одной строки. С другой стороны, строки с аннотациями обеспечивают большую гибкость при изменении внешнего вида текста. Аннотированные строки создаются с помощью функции buildAnnotatedString и могут быть сконфигурированы с использованием стилей интервала или абзаца. Другой вариант изменения отображения текста - использование стиля кисти для творческого изменения переднего плана текста, например, с помощью цветовых градиентов.
+*/
+
