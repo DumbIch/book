@@ -1,0 +1,338 @@
+38. A Compose Lazy Staggered Grid Tutorial
+==========================================
+
+/*
+The chapter “An Overview of Lists and Grids in Compose” introduced the horizontal and vertical lazy grid composables and demonstrated how they could be used to organize items in rows and columns. However, a limitation of these layouts is that the grid cells are the same size. While this may be the desired behavior for many grid implementations, it presents a problem if you need to display a grid containing items of differing sizes. To address this limitation, Jetpack Compose 1.3 introduced staggered lazy grid composables.
+
+This chapter will introduce the LazyVerticalStaggeredGrid and LazyHorizontalStaggeredGrid composables before creating an example project that puts theory into practice.
+
+
+В главе “Обзор списков и сеток в Compose” были представлены горизонтальные и вертикальные компонуемые элементы ленивой сетки и продемонстрировано, как их можно использовать для организации элементов в строках и столбцах. Однако ограничением этих макетов является то, что ячейки сетки имеют одинаковый размер. Хотя это может быть желательным поведением для многих реализаций сетки, это создает проблему, если вам нужно отобразить сетку, содержащую элементы разных размеров. Чтобы устранить это ограничение, в Jetpack Compose 1.3 были введены компонуемые макеты ленивой сетки, элементы в которых размещаются в шахматном порядке.
+
+В этой главе будут представлены компонуемые макеты LazyVerticalStaggedGrid и LazyHorizontalStaggedGrid, прежде чем создавать пример проекта, который применяет теорию на практике.
+*/
+
+
+
+38.1 Lazy Staggered Grids
+-------------------------
+
+/*
+Horizontal and vertical staggered grid layouts are created using the LazyHorizontalStaggeredGrid and LazyVerticalStaggeredGrid composable, respectively. The columns parameter controls the grid’s appearance, which can be set to either adaptive or fixed mode. In adaptive mode, the grid will calculate the number of rows and columns that will fit into the available space, with even spacing between items and subject to a minimum specified cell size. Fixed mode, on the other hand, is passed the number of rows to be displayed and sizes each row or column equally to fill the available space. Configuration options are also available to reverse the layout, add content padding, disable scrolling, and define the spacing between cells. Figure 38-1 illustrates the arrangement of items in a vertical grid layout:
+
+Горизонтальный и вертикальный макеты сетки с размещением элементов в шахматном порядке создаются с использованием компонуемых элементов LazyHorizontalStaggeredgrid и LazyVerticalStaggeredGrid соответственно. Параметр columns управляет внешним видом сетки, который может быть установлен в адаптивный или фиксированный режим. В адаптивном режиме сетка рассчитает количество строк и столбцов, которые поместятся в доступном пространстве, с равномерным расстоянием между элементами и при соблюдении минимального заданного размера ячейки. С другой стороны, в фиксированном режиме передается количество отображаемых строк и размер каждой строки или столбца одинаковый, чтобы заполнить доступное пространство. Параметры конфигурации также доступны для изменения макета, добавления отступов содержимого, отключения прокрутки и определения расстояния между ячейками. На рисунке 38-1 показано расположение элементов в макете вертикальной сетки:
+*/
+
+Figure 38-1
+
+/*
+A typical staggered grid instance might be implemented as follows:
+
+Типичный экземпляр шахматной сетки может быть реализован следующим образом:
+*/
+
+LazyVerticalStaggeredGrid(
+  columns = StaggeredGridCells.Fixed(2),
+  modifier = Modifier.fillMaxSize(),
+  contentPadding = PaddingValues(16.dp),
+  verticalItemSpacing: 16.dp,
+  horizontalArrangement = Arrangement.spacedBy(16.dp),
+  verticalArrangement = Arrangement.spacedBy(16.dp),
+  userScrollEnabled: true
+) {
+  items(items) { item ->
+    // Cell content here
+  }
+}
+
+/*
+The above example creates a LazyVerticalStaggeredGrid consisting of two fixed columns with content padding and spacing between cells, the layout for which would resemble Figure 38-2:
+
+В приведенном выше примере создается компонент LazyVerticalStaggeredGrid, состоящий из двух фиксированных столбцов с заполнением содержимого и интервалами между ячейками, макет которого будет выглядеть как на рисунке 38-2:
+*/
+
+Figure 38-2
+
+/*
+The following is the equivalent code to create a horizontal staggered grid:
+
+Ниже приведен эквивалентный код для создания горизонтальной сетки в шахматном порядке:
+*/
+
+LazyHorizontalStaggeredGrid(
+  rows = StaggeredGridCells.Fixed(2),
+  modifier = Modifier.fillMaxSize(),
+  contentPadding = PaddingValues(16.dp),
+  horizontalItemSpacing: 16.dp,
+  verticalArrangement = Arrangement.spacedBy(16.dp),
+  horizontalArrangement = Arrangement.spacedBy(16.dp),
+  userScrollEnabled: true
+) {
+  items(items) { item ->
+    // Cell content here
+  }
+}
+
+/*
+In the rest of this chapter, we will create a project demonstrating how to use a staggered grid. The example will display a grid containing items configured with random heights and colors.
+
+В оставшейся части этой главы мы создадим учебный проект, демонстрирующий, как использовать шахматную сетку. В примере будет отображаться сетка, содержащая элементы, настроенные со случайной высотой и цветами.
+*/
+
+
+
+38.2 Creating the StaggeredGridDemo project
+-------------------------------------------
+
+/*
+Launch Android Studio and select the New Project option from the welcome screen. Choose the Empty Activity template in the new project dialog before clicking the Next button.
+
+Enter StaggeredGridDemo into the Name field and specify com.example.staggeredgriddemo as the package name. Before clicking the Finish button, change the Minimum API level setting to API 26: Android 8.0 (Oreo).
+
+Within the MainActivity.kt file, delete the Greeting function and add a new empty composable named MainScreen:
+
+
+Запустите Android Studio и выберите опцию "Создать проект" на экране приветствия. Выберите пустой шаблон Empty Activity в диалоговом окне "Создать проект", прежде чем нажать кнопку "Далее".
+
+Введите StaggeredGridDemo в поле "Имя" и укажите com.example.staggedgriddemo в качестве имени пакета. Прежде чем нажать кнопку Готово, измените настройку минимального уровня API на API 26: Android 8.0 (Oreo).
+
+В файле MainActivity.kt удалите функцию Greeting и добавьте новый пустой компонуемый объект с именем MainScreen:
+*/
+
+@Composable
+fun MainScreen() {
+}
+
+/*
+Next, edit the OnCreate() method and GreetingPreview function to call MainScreen instead of Greeting.
+
+Затем отредактируйте метод onCreate() и функцию GreetingPreview, чтобы вызвать MainScreen вместо Greeting.
+*/
+
+
+
+38.3 Adding the Box composable
+------------------------------
+
+/*
+The grid item in this project will be represented by a Box composable. Each instance of this box will be configured with random height and background color properties. Before we write the code for the Box, we first need a data class to store the color and height values, which we can pass to the Box composable. Within the MainActivity.kt file, declare the data class as follows:
+
+Элемент сетки в этом проекте будет представлен компонуемым элементом Box. Для каждого экземпляра этого элемента будут настроены произвольные свойства высоты и цвета фона. Прежде чем мы напишем код для Box, нам сначала понадобится класс данных для хранения значений цвета и высоты, которые мы можем передать в компонуемый Box. В файле MainActivity.kt объявите класс данных следующим образом:
+*/
+
+.
+.
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.graphics.Color
+.
+.
+data class BoxProperties(
+  val color: Color,
+  val height: Dp
+)
+
+/*
+Next, add a composable named GridItem to display a Box composable based on the values of a BoxProperties instance:
+
+Затем добавьте компонуемый элемент сетки GridItem, чтобы отобразить компонуемый элемент Box на основе значений экземпляра BoxProperties:
+*/
+.
+.
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.unit.dp
+.
+.
+@Composable
+fun GridItem(properties: BoxProperties) {
+  Box(modifier = Modifier
+    .fillMaxWidth()
+    .height(properties.height)
+    .clip(RoundedCornerShape(10.dp))
+    .background(properties.color)
+  )
+}
+
+
+
+38.4 Generating random height and color values
+----------------------------------------------
+
+/*
+Now that we have a grid item and a way to store the current item properties, the next step is to write code to generate random height and color values. We will do this by creating a list of BoxProperties items, calling the Kotlin Random.nextInt() method for each instance to generate height and RGB color values. Edit the MainScreen composable to add the following code:
+
+Теперь, когда у нас есть элемент сетки и способ сохранить текущие свойства элемента, следующим шагом является написание кода для генерации случайных значений высоты и цвета. Мы сделаем это, создав список элементов BoxProperties, вызвав метод Kotlin Random.nextInt() для каждого экземпляра, чтобы сгенерировать значения высоты и цвета RGB. Отредактируйте компонуемый элемент MainScreen, чтобы добавить следующий код:
+*/
+.
+.
+import androidx.compose.foundation.ExperimentalFoundationApi
+import kotlin.random.Random
+.
+.
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun MainScreen() {
+  val items = (1 .. 50).map {
+    BoxProperties(
+      height = Random.nextInt(50, 200).dp,
+      color = Color(
+        Random.nextInt(255),
+        Random.nextInt(255),
+        Random.nextInt(255),
+        255
+      )
+    )
+  }
+}
+
+/*
+The above code configures 50 BoxProperties instances with random height values between 50 and 200 dp. Next, Color objects are created using random RGB values (0 to 255). In addition, the alpha Color property is set to 255 to ensure only solid, non-transparent colors are generated.
+
+Note that the above code includes a directive to opt into experimental API features. At the time of writing, the staggered grid composables were still in the experimental development phase. Depending on when you are reading this book, this setting may no longer be required.
+
+
+Приведенный выше код настраивает 50 экземпляров BoxProperties со случайными значениями высоты от 50 до 200 точек на дюйм. Далее создаются объекты Color с использованием случайных значений RGB (от 0 до 255). Кроме того, свойству alpha Color присвоено значение 255, чтобы гарантировать, что генерируются только сплошные непрозрачные цвета.
+
+Обратите внимание, что приведенный выше код содержит директиву для выбора экспериментальных функций API. На момент написания статьи компонуемые элементы шахматной сетки все еще находились на стадии экспериментальной разработки. В зависимости от того, когда вы читаете эту книгу, эта настройка может больше не потребоваться.
+*/
+
+
+
+38.5 Creating the Staggered List
+--------------------------------
+
+/*
+The final task before testing the app is to add the LazyVerticalStaggeredGrid to the layout. The goal is to create a staggered vertical grid using the items list containing three fixed-width columns with horizontal and vertical spacing between each cell. Edit the MainScreen composable once again and modify it as follows:
+
+Последняя задача перед тестированием приложения - добавить в макет компонент LazyVerticalStaggeredGrid. Цель состоит в том, чтобы создать вертикальную сетку в шахматном порядке, используя список элементов, содержащий три столбца фиксированной ширины с интервалом по горизонтали и вертикали между каждой ячейкой. Отредактируйте компоновку главного экрана еще раз и измените ее следующим образом:
+*/
+.
+.
+import androidx.compose.foundation.lazy.staggeredgrid.*
+.
+.
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun MainScreen() {
+  val items = (1 .. 50).map {
+    BoxProperties(
+.
+.
+  }
+  LazyVerticalStaggeredGrid(
+    columns = StaggeredGridCells.Fixed(3),
+    modifier = Modifier.fillMaxSize(),
+    contentPadding = PaddingValues(8.dp),
+    horizontalArrangement = Arrangement.spacedBy(8.dp),
+    verticalArrangement = Arrangement.spacedBy(8.dp)
+  ) {
+    items(items) { values ->
+      GridItem(properties = values)
+    }
+  }
+}
+
+
+
+38.6 Testing the project
+------------------------
+
+/*
+With the code writing completed, display the preview panel where the staggered grid layout should appear, as shown in Figure 38-3 (allowing, of course, for the random color and height properties). Assuming that the layout is rendered as expected, enable interactive mode and test that it is possible to scroll vertically through the grid items.
+
+Когда написание кода завершено, отобразите панель предварительного просмотра, на которой должна появиться разметка сетки в шахматном порядке, как показано на рисунке 38-3 (с учетом, конечно, свойств случайного цвета и высоты). Предполагая, что макет отрисован должным образом, включите интерактивный режим и проверьте, можно ли прокручивать элементы сетки по вертикали.
+*/
+
+Figure 38-3
+
+
+
+38.7 Switching to a horizontal staggered grid
+---------------------------------------------
+
+/*
+To convert the example grid to use the LazyHorizontalStaggeredGrid layout, make the following changes to the MainActivity.kt file:
+
+Чтобы преобразовать пример сетки для использования макета LazyHorizontalStaggeredGrid, внесите следующие изменения в файл MainActivity.kt:
+*/
+.
+.
+data class BoxProperties(
+  val color: Color,
+  val width: Dp
+)
+
+@Composable
+fun GridItem(properties: BoxProperties) {
+  Box(
+    modifier = Modifier
+      .fillMaxWidth()
+      .width(properties.width)
+      .clip(RoundedCornerShape(10.dp))
+      .background(properties.color)
+  )
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun MainScreen() {
+  val items = (1 .. 50).map {
+    BoxProperties(
+      width = Random.nextInt(50, 200).dp,
+.
+.
+  }
+  LazyHorizontalStaggeredGrid(
+    rows = StaggeredGridCells.Fixed(3),
+    modifier = Modifier.fillMaxSize(),
+    contentPadding = PaddingValues(8.dp),
+    horizontalArrangement = Arrangement.spacedBy(8.dp),
+    verticalArrangement = Arrangement.spacedBy(8.dp)
+  ) {
+    items(items) { values ->
+      GridItem(properties = values)
+    }
+  }
+}
+
+/*
+Finally, switch the preview to landscape orientation:
+
+Наконец, переключите предварительный просмотр в альбомную ориентацию:
+*/
+
+@Preview(showBackground = true, device = "spec:parent=pixel_5,orientation=landscape")
+@Composable
+fun GreetingPreview() {
+  StaggeredGridDemoTheme {
+    MainScreen()
+  }
+}
+
+/*
+Once the preview has updated, the layout should appear as shown in Figure 38-4:
+
+После обновления предварительного просмотра макет должен выглядеть так, как показано на рисунке 38-4:
+*/
+
+Figure 38-4
+
+/*
+Enable interactive mode and check that you can scroll horizontally through the grid.
+
+Включите интерактивный режим и убедитесь, что вы можете прокручивать сетку по горизонтали.
+*/
+
+
+
+38.8 Summary
+------------
+
+/*
+In this chapter, we have introduced the vertical and horizontal lazy grid composables. These layouts are useful when items of varying sizes need to be shown in a grid format. Grids can be presented in either adaptive or fixed mode. Adaptive mode calculates how many rows or columns will fit into the available space, with even spacing between items and subject to a minimum specified size. Fixed mode, on the other hand, is passed the number of rows or columns to be displayed and sizes each to fill the available space.
+
+В этой главе мы представили компонуемые ленивые элементы вертикальной и горизонтальной сетки. Эти макеты полезны, когда элементы разного размера необходимо отображать в формате сетки. Сетки могут быть представлены как в адаптивном, так и в фиксированном режиме. Адаптивный режим вычисляет, сколько строк или столбцов поместится в доступном пространстве, с равномерным интервалом между элементами и при соблюдении минимально заданного размера. В фиксированном режиме, с другой стороны, передается количество отображаемых строк или столбцов и размеры каждого, чтобы заполнить доступное пространство.
+*/
+
