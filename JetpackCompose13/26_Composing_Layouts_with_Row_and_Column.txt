@@ -1,0 +1,705 @@
+26. Composing Layouts with Row and Column
+=========================================
+
+/*
+User interface design is largely a matter of selecting the appropriate interface components, deciding how those views will be positioned on the screen, and then implementing navigation between the different screens of the app.
+
+As is to be expected, Compose includes a wide range of user interface components for use when developing an app. Compose also provides a set of layout composables to define both how the user interface is organized and how the layout responds to factors such as changes in screen orientation and size.
+
+This chapter will introduce the Row and Column composables included with Compose and explain how these can be used to create user interface designs with relative ease.
+
+
+
+Дизайн пользовательского интерфейса в значительной степени зависит от выбора соответствующих компонентов интерфейса, решения о том, как эти представления будут расположены на экране, а также от реализации навигации между различными экранами приложения.
+
+Как и следовало ожидать, Compose включает в себя широкий спектр компонентов пользовательского интерфейса для использования при разработке приложения. Compose также предоставляет набор компонуемых элементов макета, определяющих как организацию пользовательского интерфейса, так и то, как макет реагирует на такие факторы, как изменения ориентации и размера экрана.
+
+В этой главе будут представлены компонуемые элементы строк (Row) и столбцов (Column), входящие в состав Compose, и объяснено, как их можно относительно легко использовать для создания дизайна пользовательского интерфейса.
+*/
+
+
+
+26.1 Creating the RowColDemo project
+------------------------------------
+
+/*
+Launch Android Studio and select the New Project option from the welcome screen. Within the resulting new project dialog, choose the Empty Activity template before clicking on the Next button.
+
+Enter RowColDemo into the Name field and specify com.example.rowcoldemo as the package name. Before clicking on the Finish button, change the Minimum API level setting to API 26: Android 8.0 (Oreo). Within the MainActivity.kt file, delete the Greeting function and add a new empty composable named MainScreen:
+
+
+Запустите Android Studio и выберите параметр "Новый проект" на экране приветствия. В появившемся диалоговом окне "Новый проект" выберите пустой шаблон Empty Activity, прежде чем нажать кнопку "Далее".
+
+Введите RowColDemo в поле "Имя" и укажите com.example.rowcoldemo в качестве имени пакета. Прежде чем нажать на кнопку Готово, измените настройку минимального уровня API на API 26: Android 8.0 (Oreo). В файле MainActivity.kt удалите функцию Greeting и добавьте новую пустую компонуемую функцию с именем MainScreen:
+*/
+
+@Composable
+fun MainScreen() {
+}
+
+/*
+Next, edit the OnCreate() method and GreetingPreview function to call MainScreen instead of Greeting. As we work through the examples in this chapter, row and column-based layouts will be built using instances of a custom component named TextCell which displays text within a black border with a small amount of padding to provide space between adjoining components. Before proceeding, add this function to the MainActivity.kt file as follows:
+
+Затем отредактируйте метод onCreate() и функцию GreetingPreview, чтобы вызвать MainScreen вместо Greeting. По мере проработки примеров в этой главе макеты на основе строк и столбцов будут создаваться с использованием экземпляров пользовательского компонента с именем TextCell, который отображает текст в черной рамке с небольшим количеством отступов, чтобы обеспечить пространство между соседними компонентами. Прежде чем продолжить, добавьте эту функцию в файл MainActivity.kt следующим образом:
+*/
+
+.
+.
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+.
+.
+@Composable
+fun TextCell(text: String, modifier: Modifier = Modifier) {
+  val cellModifier = Modifier
+    .padding(4.dp)
+    .size(100.dp, 100.dp)
+    .border(width = 4.dp, color = Color.Black)
+  Text(
+    text = text, 
+    cellModifier.then(modifier),
+    fontSize = 70.sp,
+    fontWeight = FontWeight.Bold,
+    textAlign = TextAlign.Center
+  )
+}
+
+
+
+26.2 Row composable
+-------------------
+
+/*
+The Row composable, as the name suggests, lays out its children horizontally on the screen. For example, add a simple Row composable to the MainScreen function as follows:
+
+Компонуемый элемент Row, как следует из названия, размещает свои дочерние элементы горизонтально на экране. Например, добавьте простой компонуемый элемент Row в функцию MainScreen следующим образом:
+*/
+.
+.
+@Composable
+fun MainScreen() {
+  Row {
+    TextCell("1")
+    TextCell("2")
+    TextCell("3")
+  }
+}
+
+/*
+When rendered, the Row declared above will appear as illustrated in Figure 26-1 below:
+
+При отрисовке элемент Row, объявленный выше, будет отображаться так, как показано на рисунке 26-1 ниже:
+*/
+
+Figure 26-1
+
+
+
+26.3 Column composable
+----------------------
+
+/*
+The Column composable performs the same purpose as the Row with the exception that its children are arranged vertically. The following example places the same three composables within a Column:
+
+Компонуемый элемент Column выполняет ту же функцию, что и элемент Row, за исключением того, что его дочерние элементы расположены вертикально. В следующем примере те же три компонуемых элемента помещаются в элемент Column:
+*/
+.
+.
+@Composable
+fun MainScreen() {
+  Column {
+    TextCell("1")
+    TextCell("2")
+    TextCell("3")
+  }
+}
+
+/*
+The rendered output from the code will appear as shown in Figure 26-2:
+
+Код реализует визуальный интерфейс, который будет выглядеть так, как показано на рисунке 26-2:
+*/
+
+Figure 26-2
+
+
+
+26.4 Combining Row and Column composables
+-----------------------------------------
+
+/*
+Row and Column composables can, of course, be embedded within each other to create table style layouts. Try, for example, the following composition containing a mixture of embedded Row and Column layouts: 
+
+Разумеется, компонуемые элементы Row и Column могут быть встроены друг в друга для создания макетов в табличном стиле. Попробуйте, например, следующую композицию, содержащую смесь встроенных макетов Row и Column:
+*/
+
+@Composable
+fun MainScreen() {
+  Column {
+    Row {
+      Column {
+        TextCell("1")
+        TextCell("2")
+        TextCell("3")
+      }
+      Column {
+        TextCell("4")
+        TextCell("5")
+        TextCell("6")
+      }
+      Column {
+        TextCell("7")
+        TextCell("8")
+      }
+    }
+    Row {
+      TextCell("9")
+      TextCell("10")
+      TextCell("11")
+    }
+  }
+}
+
+/*
+Figure 26-3 illustrates the layout generated by the above code:
+
+Рисунок 26-3 иллюстрирует макет, сгенерированный приведенным выше кодом:
+*/
+
+Figure 26-3
+
+/*
+Using this technique, Row and Column layouts may be embedded within each other to achieve just about any level of layout complexity.
+
+Используя этот метод, макеты Row и Column могут быть встроены друг в друга для реализации макета практически любого уровня сложности.
+*/
+
+
+
+26.5 Layout alignment
+---------------------
+
+/*
+Both the Row and Column composables will occupy an area of space within the user interface layout depending on child elements, other composables, and any size-related modifiers that may have been applied. By default, the group of child elements within a Row or Column will be aligned with the top left-hand corner of the content area (assuming the app is running on a device configured with a left-to-right reading locale). We can see this effect if we increase the size of our original example Row composable:
+
+Компонуемые элементы Row и Column будут занимать определенную область пространства в макете пользовательского интерфейса в зависимости от дочерних элементов, других компонуемых элементов и любых модификаторов, связанных с размером, которые могли быть применены. По умолчанию группа дочерних элементов в строке или столбце будет выровнена по верхнему левому углу области содержимого (при условии, что приложение запущено на устройстве, настроенном на чтение слева направо). Мы можем увидеть этот эффект, если увеличим размер нашего исходного примера использования компонуемого элемента Row:
+*/
+
+@Composable
+fun MainScreen() {
+  Row(modifier = Modifier.size(width = 400.dp, height = 200.dp)) {
+    TextCell("1")
+    TextCell("2")
+    TextCell("3")
+  }
+}
+
+/*
+Before making this change, the Row was wrapping its children (in other words sizing itself to match the content). Now that the Row is larger than the content we can see that the default alignment has placed the children in the top left-hand corner of the Row component:
+
+Перед внесением этого изменения элемент Row оборачивал свои дочерние элементы (другими словами, изменял размер в соответствии с содержимым). Теперь, когда строка больше содержимого, мы можем видеть, что выравнивание по умолчанию поместило дочерние элементы в верхний левый угол компонента Row:
+*/
+
+Figure 26-4
+
+/*
+This default alignment in the vertical axis may be changed by passing through a new value using the verticalAlignment parameter of the Row composable. For example, to position the children in the vertical center of the available space, the Alignment.CenterVertically value would be passed to the Row as follows:
+
+Это выравнивание по вертикальной оси по умолчанию может быть изменено путем передачи нового значения с использованием параметра verticalAlignment компонуемого элемента Row. Например, чтобы расположить дочерние элементы в вертикальном центре доступного пространства, Alignment.CenterVertically будет передано в элемент Row следующим образом:
+*/
+
+.
+.
+import androidx.compose.ui.Alignment
+.
+.
+@Composable
+fun MainScreen() {
+  Row(
+    verticalAlignment = Alignment.CenterVertically,
+    modifier = Modifier
+      .size(width = 400.dp, height = 200.dp)
+  ) {
+    TextCell("1")
+    TextCell("2")
+    TextCell("3")
+  }
+}
+
+/*
+This will cause the content to be positioned in the vertical center of the Row’s area as illustrated below:
+
+Это приведет к тому, что содержимое будет расположено в вертикальном центре области строки, как показано ниже:
+*/
+
+Figure 26-5
+
+/*
+The following is a list of alignment values accepted by the Row vertical alignment parameter:
+• Alignment.Top - Aligns the content at the top of the Row content area.
+• Alignment.CenterVertically - Positions the content in the vertical center of the Row content area.
+• Alignment.Bottom - Aligns the content at the bottom of the Row content area.
+
+When working with the Column composable, the horizontalAlignment parameter is used to configure alignment along the horizontal axis. Acceptable values are as follows:
+• Alignment.Start - Aligns the content at the horizontal start of the Column content area.
+• Alignment.CenterHorizontally - Positions the content in the horizontal center of the Column content area
+• Alignment.End - Aligns the content at the horizontal end of the Column content area.
+
+In the following example, the Column’s children have been aligned with the end of the Column content area:
+
+
+Ниже приведен список значений выравнивания, принимаемых параметром выравнивания строки по вертикали:
+• Alignment.Top - Выравнивает содержимое в верхней части области содержимого строки.
+• Alignment.CenterVertically - Размещает содержимое в вертикальном центре области содержимого строки.
+• Alignment.Bottom - выравнивает содержимое в нижней части области содержимого строки.
+
+При работе с компонуемым столбцом параметр HorizontalAlignment используется для настройки выравнивания по горизонтальной оси. Допустимые значения следующие:
+• Alignment.Start - Выравнивает содержимое по горизонтали в начале области содержимого столбца.
+• Alignment.CenterHorizontally - Размещает содержимое по горизонтали в центре области содержимого столбца
+• Alignment.End - Выравнивает содержимое по горизонтали в конце области содержимого столбца.
+
+В следующем примере дочерние элементы столбца были выровнены по краю области содержимого столбца:
+*/
+
+.
+.
+@Composable
+fun MainScreen() {
+  Column(
+    horizontalAlignment = Alignment.End,
+    modifier = Modifier
+      .width(250.dp)
+  ) {
+    TextCell("1")
+    TextCell("2")
+    TextCell("3")
+  }
+}
+
+/*
+When rendered, the resulting column will appear as shown in Figure 26-6:
+
+При визуализации результирующий столбец будет выглядеть так, как показано на рис. 26-6:
+*/
+
+Figure 26-6
+
+/*
+When working with alignment it is worth remembering that it works on the opposite axis to the flow of the containing composable. For example, while the Row organizes children horizontally, alignment operates on the vertical axis. Conversely, alignment operates on the horizontal axis for the Column composable while children are arranged vertically. The reason for emphasizing this point will become evident when we introduce arrangements.
+
+При работе с выравниванием стоит помнить, что оно работает на оси, противоположной потоку содержащего компонуемого элемента. Например, в то время как элемент Row упорядочивает дочерние элементы по горизонтали, выравнивание выполняется по вертикальной оси. И наоборот, выравнивание выполняется по горизонтальной оси для компонуемого элемента Column, в то время как дочерние элементы расположены вертикально. Причина, по которой мы подчеркиваем этот момент, станет очевидной, когда мы представим виды размещения (arrangements).
+*/
+
+
+
+26.6 Layout arrangement positioning
+-----------------------------------
+
+/*
+Unlike the alignment settings, arrangement controls child positioning along the same axis as the container (i.e. horizontally for Rows and vertically for Columns). Arrangement values are set on Row and Column instances using the horizontalArrangement and verticalArrangement parameters respectively. Arrangement properties can be categorized as influencing either position or child spacing.
+
+The following positional settings are available for the Row component via the horizontalArrangement parameter:
+• Arrangement.Start - Aligns the content at the horizontal start of the Row content area.
+• Arrangement.Center - Positions the content in the horizontal center of the Row content area.
+• Arrangement.End - Aligns the content at the horizontal end of the Row content area.
+
+The above settings can be visualized as shown in Figure 26-7:
+
+
+В отличие от настроек выравнивания, расположение управляет позиционированием дочерних элементов вдоль той же оси, что и контейнер (т.е. по горизонтали для строк и по вертикали для столбцов). Значения расположения устанавливаются для экземпляров строк и столбцов с использованием параметров horizontalArrangement и verticalArrangement соответственно. Свойства расположения могут быть классифицированы как влияющие либо на положение, либо на расстояние между дочерними элементами.
+
+Следующие настройки расположения доступны для компонента Row с помощью параметра horizontalArrangement:
+• Arrangement.Start - Выравнивает содержимое по горизонтали в начале области содержимого строки.
+• Arrangement.Center - Размещает содержимое по горизонтали в центре области содержимого строки.
+• Arrangement.End - Выравнивает содержимое по горизонтали в конце области содержимого строки.
+
+Вышеуказанные настройки можно визуализировать, как показано на рисунке 26-7:
+*/
+
+Figure 26-7
+
+/*
+The Column composable, on the other hand, accepts the following values for the verticalArrangement parameter:
+• Arrangement.Top - Aligns the content at the top of the Column content area.
+• Arrangement.Center - Positions the content in the vertical center of the Column content area.
+• Arrangement.Bottom - Aligns the content at the bottom of the Column content area.
+
+Figure 26-8 illustrates these verticalArrangement settings:
+
+
+Компонуемый элемент Column, с другой стороны, принимает следующие значения для параметра вертикального расположения:
+• Arrangement.Top - Выравнивает содержимое в верхней части области содержимого столбца.
+• Arrangement.Center - Размещает содержимое в вертикальном центре области содержимого столбца.
+• Arrangement.Bottom - Выравнивает содержимое в нижней части области содержимого столбца.
+
+На рисунке 26-8 показаны эти параметры вертикального расположения:
+*/
+
+Figure 26-8
+
+/*
+Using our example once again, the following change moves the child elements to the end of the Row content area:
+
+Используя наш пример еще раз, следующее изменение перемещает дочерние элементы в конец области содержимого элемента Row:
+*/
+
+Row(
+  horizontalArrangement = Arrangement.End,
+  modifier = Modifier
+    .size(width = 400.dp, height = 200.dp)
+) {
+  TextCell("1")
+  TextCell("2")
+  TextCell("3")
+}
+
+/*
+The above code will generate the following user interface layout:
+
+Приведенный выше код сгенерирует следующий макет пользовательского интерфейса:
+*/
+
+Figure 26-9
+
+/*
+Similarly, the following positions child elements at the bottom of the containing Column:
+
+Аналогично, следующий код размещает дочерние элементы в нижней части контейнера Column:
+*/
+
+Column(
+  verticalArrangement = Arrangement.Bottom,
+  modifier = Modifier
+    .height(400.dp)
+) {
+  TextCell("1")
+  TextCell("2")
+  TextCell("3")
+}
+
+/*
+The above composable will render within the Preview panel as illustrated in Figure 26-10 below:
+
+Приведенная выше компонуемая функция будет отображаться на панели предварительного просмотра, как показано на рисунке 26-10 ниже:
+*/
+
+Figure 26-10
+
+
+
+26.7 Layout arrangement spacing
+-------------------------------
+
+/*
+Arrangement spacing controls how the child components in a Row or Column are spaced across the content area. These settings are still defined using the horizontalArrangement and verticalArrangement parameters, but require one of the following values:
+• Arrangement.SpaceEvenly - Children are spaced equally, including space before the first and after the last child.
+• Arrangement.SpaceBetween - Children are spaced equally, with no space allocation before the first and after the last child.
+• Arrangement.SpaceAround - Children are spaced equally, including half spacing before the first and after the last child.
+
+In the following declaration, the children of a Row are positioned using the SpaceEvenly setting:
+
+
+Расстояние между компоновками определяет, как дочерние компоненты в строке или столбце распределяются по области содержимого. Эти настройки по-прежнему определяются с использованием параметров horizontalArrangement и verticalArrangement, но для них требуется одно из следующих значений:
+• Arrangement.SpaceEvenly - Дочерние элементы расположены на равном расстоянии друг от друга, включая пространство перед первым и после последнего дочернего элемента.
+• Arrangement.SpaceBetween между дочерними элементами - Дочерние элементы расположены на равном расстоянии друг от друга, без выделения пространства перед первым и после последнего дочернего элемента.
+• Arrangement.SpaceAround - дочерние элементы расположены на равном расстоянии друг от друга, включая половинный интервал перед первым и после последнего дочернего элемента.
+
+В следующем объявлении дочерние элементы ряда расположены с использованием параметра "Равномерно" (SpaceEvenly):
+*/
+
+Row(
+  horizontalArrangement = Arrangement.SpaceEvenly,
+  modifier = Modifier
+    .width(1000.dp)
+) {
+  TextCell("1")
+  TextCell("2")
+  TextCell("3")
+}
+
+/*
+The above code gives us the following layout with equal gaps at the beginning and end of the row and between each child:
+
+Приведенный выше код дает нам следующий макет с равными промежутками в начале и конце строки и между каждым дочерним элементом:
+*/
+
+Figure 26-11
+
+/*
+Figure 26-12, on the other hand, shows the same row configured with the SpaceBetween setting. Note that the row has no leading or trailing spacing:
+
+С другой стороны, на рисунке 26-12 показана та же строка, настроенная с параметром "Пространство между" (SpaceBetween). Обратите внимание, что в строке нет начального или конечного интервала:
+*/
+
+Figure 26-12
+
+/*
+Finally, Figure 26-13 shows the effect of applying the SpaceAround setting which adds full spacing between children and half the spacing on the leading and trailing ends:
+
+Наконец, на рисунке 26-13 показан эффект применения параметра "Пространство вокруг" (SpaceAround), который добавляет полный интервал между дочерними элементами и половину интервала на переднем и заднем концах:
+*/
+
+Figure 26-13
+
+
+
+26.8 Row and Column scope modifiers
+-----------------------------------
+
+/*
+The children of a Row or Column are said to be within the scope of the parent. These two scopes (RowScope and ColumnScope) provide a set of additional modifier functions that can be applied to change the behavior and appearance of individual children within a Row or Column. The Android Studio code editor provides a visual indicator when children are within a scope. In Figure 26-14, for example, the editor indicates that the RowScope modifier functions are available to the three child composables:
+
+Считается, что дочерние элементы строки или столбца находятся в пределах родительской области. Эти две области (RowScope и ColumnScope) предоставляют набор дополнительных функций-модификаторов, которые могут быть применены для изменения поведения и внешнего вида отдельных дочерних элементов в контейнерах Row или Column. Редактор кода Android Studio предоставляет визуальный индикатор, когда дочерние элементы находятся в пределах области видимости. Например, на рисунке 26-14 редактор указывает, что функции модификатора области видимости строк доступны для трех дочерних составных элементов:
+*/
+
+Figure 26-14
+
+/*
+When working with the Column composable, a similar ColumnScope indicator will appear.
+
+ColumnScope includes the following modifiers for controlling the position of child components:
+• Modifier.align() - Allows the child to be aligned horizontally using Alignment.CenterHorizontally, Alignment.Start, and Alignment.End values.
+• Modifier.alignBy() - Aligns a child horizontally with other siblings on which the alignBy() modifier has also been applied.
+• Modifier.weight() - Sets the height of the child relative to the weight values assigned to its siblings.
+
+RowScope provides the following additional modifier functions to Row children:
+• Modifier.align() - Allows the child to be aligned vertically using Alignment.CenterVertically, Alignment.Top, and Alignment.Bottom values.
+• Modifier.alignBy() - Aligns a child with other siblings on which the alignBy() modifier has also been applied. Alignment may be performed by baseline or using custom alignment line configurations.
+• Modifier.alignByBaseline() - Aligns the baseline of a child with any siblings that have also been configured by either the alignBy() or alignByBaseline() modifier.
+• Modifier.paddingFrom() - Allows padding to be added to the alignment line of a child.
+• Modifier.weight() - Sets the width of the child relative to the weight values assigned to its siblings.
+
+The following Row declaration, for example, sets different alignments on each of the three TextCell children:
+
+
+При работе с компонуемым элементом Column появится аналогичный индикатор ColumnScope.
+
+ColumnScope включает в себя следующие модификаторы для управления положением дочерних элементов компонента Column:
+• Modifier.align() - позволяет выровнять дочерний элемент по горизонтали, используя значения Alignment.CenterHorizontally, Alignment.Start и Alignment.End.
+• Modifier.alignBy() - Выравнивает дочерний элемент по горизонтали с другими родственными элементами, к которым также был применен модификатор alignBy().
+• Modifier.weight() - устанавливает высоту дочернего элемента относительно значений весов, назначенных его родственникам
+
+RowScope включает в себя следующие модификаторы для управления положением дочерних элементов компонента Row:
+• Modifier.align() - Позволяет выровнять дочерний элемент по вертикали, используя значения Alignment.CenterVertically, Alignment.Top, и Alignment.Bottom.
+• Modifier.alignBy() - Выравнивает дочерний элемент с другими родственными элементами, к которым также был применен модификатор alignBy(). Выравнивание может выполняться по базовой линии или с использованием пользовательских конфигураций линий выравнивания.
+• Modifier.alignByBaseline() - Выравнивает базовую линию дочернего элемента с любыми братьями и сестрами, которые также были настроены с помощью модификатора alignBy() или alignByBaseline().
+• Modifier.paddingFrom() - позволяет добавлять отступы к линии выравнивания дочернего элемента.
+• Modifier.weight() - устанавливает ширину дочернего элемента относительно значений веса, назначенных его родственникам.
+
+Например, следующее объявление контейнера Row устанавливает различные выравнивания для каждого из трех дочерних элементов TextCell:
+*/
+
+Row(
+  modifier = Modifier
+    .height(300.dp)
+) {
+  TextCell("1", Modifier.align(Alignment.Top))
+  TextCell("2", Modifier.align(Alignment.CenterVertically))
+  TextCell("3", Modifier.align(Alignment.Bottom))
+}
+
+/*
+When previewed, this will generate a layout resembling Figure 26-15:
+
+При предварительном просмотре будет сгенерирован макет, похожий на рисунок 26-15:
+*/
+
+Figure 26-15
+
+/*
+The baseline alignment options are especially useful for aligning text content with differing font sizes. Consider, for example, the following Row configuration:
+
+Параметры выравнивания по базовой линии особенно полезны для выравнивания текстового содержимого с различными размерами шрифта. Рассмотрим, например, следующую конфигурацию строк:
+*/
+
+Row {
+  Text(
+    text = "Large Text",
+    fontSize = 40.sp,
+    fontWeight = FontWeight.Bold
+  )
+  Text(
+    text = "Small Text",
+    fontSize = 32.sp,
+    fontWeight = FontWeight.Bold
+  )
+}
+
+/*
+This code consists of a Row containing two Text composables, each using a different font size resulting in the following layout:
+
+Этот код состоит из макета Row, содержащего два компонуемых элемента Text, каждый из которых использует разный размер шрифта, что приводит к следующему виду макета:
+*/
+
+Figure 26-16
+
+/*
+The Row has aligned the two Text composables along their top edges causing the text content to be out of alignment relative to the text baselines. To resolve this problem we can apply the alignByBaseline() modifier to both children as follows:
+
+Макет Row выровнял два компонуемых элемента Text по их верхним краям, в результате чего текстовое содержимое не выровнено относительно базовых линий текста. Чтобы решить эту проблему, мы можем применить модификатор alignByBaseline() к обоим дочерним элементам следующим образом:
+*/
+
+Row {
+  Text(
+    text = "Large Text",
+    Modifier.alignByBaseline(),
+    fontSize = 40.sp,
+    fontWeight = FontWeight.Bold
+  )
+  Text(
+    text = "Small Text",
+    Modifier.alignByBaseline(),
+    fontSize = 32.sp,
+    fontWeight = FontWeight.Bold,
+  )
+}
+
+/*
+Now when the layout is rendered, the baselines of the two Text composables will be aligned as illustrated in Figure 26-17:
+
+Теперь, когда макет отрисован, базовые линии двух текстовых компонентов будут выровнены, как показано на рисунке 26-17:
+*/
+
+Figure 26-17
+
+/*
+As an alternative, the alignByBaseline() modifier may be replaced by a call to the alignBy() function, passing through FirstBaseline as the alignment parameter:
+
+В качестве альтернативы модификатор alignByBaseline() может быть заменен вызовом функции alignBy(), принимающей FirstBaseline в качестве параметра выравнивания:
+*/
+
+Modifier.alignBy(FirstBaseline)
+
+/*
+When working with multi-line text, passing LastBaseline through to the alignBy() modifier function will cause appropriately configured sibling components to align with the baseline of the last line of text:
+
+При работе с многострочным текстом передача LastBaseline в функцию-модификатор alignBy() приведет к выравниванию соответствующим образом настроенных родственных компонентов по базовой линии последней строки текста:
+*/
+.
+.
+import androidx.compose.ui.layout.LastBaseline
+.
+.
+@Composable
+fun MainScreen() {
+  Row {
+    Text(
+      text = "Large Text\n\nMore Text",
+      Modifier.alignBy(LastBaseline),
+      fontSize = 40.sp,
+      fontWeight = FontWeight.Bold
+    )
+    Text(
+      text = "Small Text",
+      Modifier.alignByBaseline(),
+      fontSize = 32.sp,
+      fontWeight = FontWeight.Bold,
+    )
+  }
+}
+
+/*
+Now when the layout appears the baseline of the text content of the second child will align with the baseline of the last line of text in the first child:
+
+Теперь, когда появится макет, базовая линия текстового содержимого второго дочернего элемента будет выровнена с базовой линией последней строки текста в первом дочернем элементе:
+*/
+
+Figure 26-18
+
+/*
+Using the FirstBaseline in the above example would, of course, align the baseline of the small text composable with the baseline of the first line of text in the multi-line component:
+
+Использование FirstBaseline в приведенном выше примере, конечно, привело бы к выравниванию базовой линии компонуемого небольшого текста с базовой линией первой строки текста в многострочном компоненте:
+*/
+
+Figure 26-19
+
+/*
+In the examples we have looked at so far we have specified the baseline as the alignment line for both children. If we need the alignment to be offset for a child, we can do so using the paddingFrom() modifier. The following example adds an additional 80dp vertical offset to the first baseline alignment position of the small text composable:
+
+В примерах, которые мы рассмотрели до сих пор, мы указали базовую линию в качестве линии выравнивания для обоих дочерних элементов. Если нам нужно, чтобы выравнивание было смещено для дочернего элемента, мы можем сделать это, используя модификатор paddingFrom(). В следующем примере добавлено дополнительное смещение по вертикали на 80 точек к первой позиции выравнивания базовой линии для компонуемого мелкого текста:
+*/
+.
+.
+import androidx.compose.ui.layout.FirstBaseline
+.
+.
+@Composable
+fun MainScreen() {
+  Row {
+    Text(
+      text = "Large Text\n\nMore Text",
+      Modifier.alignBy(FirstBaseline),
+      fontSize = 40.sp,
+      fontWeight = FontWeight.Bold
+    )
+    Text(
+      text = "Small Text",
+      modifier = Modifier
+        .paddingFrom(alignmentLine = FirstBaseline, before = 80.dp, after = 0.dp),
+      fontSize = 32.sp,
+      fontWeight = FontWeight.Bold
+    )
+  }
+}
+
+/*
+When rendered, the above layout will appear as shown in Figure 26-20:
+
+При отрисовке приведенный выше макет будет выглядеть так, как показано на рис. 26-20:
+*/
+
+Figure 26-20
+
+
+
+26.9 Scope modifier weights
+---------------------------
+
+/*
+The RowScope weight modifier allows the width of each child to be specified relative to its siblings. This works by assigning each child a weight percentage (between 0.0 and 1.0). Two children assigned a weight of 0.5, for example, would each occupy half of the available space. Modify the MainScreen function one last time as follows to demonstrate the use of the weight modifier:
+
+Модификатор веса RowScope позволяет указывать ширину каждого дочернего элемента относительно родственных ему компонентов. Это работает путем присвоения каждому дочернему элементу процентного значения веса (от 0,0 до 1,0). Например, два дочерних элемента, которым присвоен вес 0,5, заняли бы половину доступного пространства. Измените функцию MainScreen в последний раз следующим образом, чтобы продемонстрировать использование модификатора веса:
+*/
+
+@Composable
+fun MainScreen() {
+  Row {
+    TextCell("1", Modifier.weight(weight = 0.2f, fill = true))
+    TextCell("2", Modifier.weight(weight = 0.4f, fill = true))
+    TextCell("3", Modifier.weight(weight = 0.3f, fill = true))
+  }
+}
+
+/*
+Rebuild and refresh the preview panel, at which point the layout should resemble that shown in Figure 26-21 below:
+
+Обновите панель предварительного просмотра, после чего макет должен выглядеть так, как показано на рис. 26-21 ниже:
+*/
+
+Figure 26-21
+
+/*
+Siblings that do not have a weight modifier applied will appear at their preferred size leaving the weighted children to share the remaining space.
+ColumnScope also provides align(), alignBy(), and weight() modifiers, though these all operate on the horizontal axis. Unlike RowScope, there is no concept of baselines when working with ColumnScope.
+
+Потомки, к которым не применен модификатор веса, будут отображаться в их предпочтительном размере, оставляя взвешенным дочерним элементам разделять оставшееся пространство.
+Область видимости ColumnScope также содержит модификаторы align(), alignBy() и weight(), хотя все они работают по горизонтальной оси. В отличие от RowScope, при работе с ColumnScope отсутствует понятие базовых линий.
+*/
+
+
+
+26.10 Summary
+-------------
+
+/*
+The Compose Row and Column components provide an easy way to layout child composables in horizontal and vertical arrangements. When embedded within each other, the Row and Column allow table style layouts of any level of complexity to be created. Both layout components include options for customizing the alignment, spacing, and positioning of children. Scope modifiers allow the positioning, and sizing behavior of individual children to be defined, including aligning and sizing children relative to each other.
+
+Компоненты Compose Row и Column предоставляют простой способ расположения дочерних компонуемых элементов по горизонтали и по вертикали. Будучи встроенными друг в друга, строка и столбец позволяют создавать макеты в табличном стиле любого уровня сложности. Оба компонента макета включают опции для настройки выравнивания, интервала и расположения дочерних элементов. Модификаторы области видимости позволяют определять расположение и размер отдельных дочерних элементов, включая выравнивание и изменение размера дочерних элементов относительно друг друга.
+*/
