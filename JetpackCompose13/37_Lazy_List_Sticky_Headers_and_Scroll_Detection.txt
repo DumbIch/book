@@ -1,0 +1,327 @@
+37. Lazy List Sticky Headers and Scroll Detection
+=================================================
+
+/*
+In the previous chapter, we created a project that uses the LazyColumn layout to display a list of Card components containing images and text. The project also implemented clickable list items which display a message when tapped.
+
+This chapter will extend the project both to include sticky header support and to use scroll detection to display a “go to top” button when the user has scrolled a specific distance through the list, both of which were introduced in the chapter entitled “An Overview of Lists and Grids in Compose”.
+
+
+В предыдущей главе мы создали проект, который использует макет LazyColumn для отображения списка компонентов Card, содержащих изображения и текст. В проекте также реализованы интерактивные элементы списка, которые отображают сообщение при нажатии.
+
+В этой главе проект будет расширен как за счет включения поддержки липких заголовков, так и за счет использования обнаружения прокрутки для отображения кнопки “перейти к началу”, когда пользователь прокручивает список на определенное расстояние. Эти темы были представлены в главе “Обзор списков и сеток в Compose”.
+*/
+
+
+
+37.1 Grouping the list item data
+--------------------------------
+
+/*
+As currently implemented, the LazyColumn list is populated directly from an array of string values. The goal is now to group those items by manufacturer, with each group preceded in the list by a sticky header displaying the manufacturer’s name.
+
+The first step in adding sticky header support is to call the groupBy() method on the itemList array, passing through the first word of each item string (i.e. the manufacturer name) as the group selector value. Edit the MainActivity.kt file, locate the MainScreen function and modify it as follows to group the items into a mapped list:
+
+
+В соответствии с текущей реализацией учебного проекта, список LazyColumn заполняется непосредственно из массива строковых значений. Цель теперь состоит в том, чтобы сгруппировать эти элементы по производителю, при этом каждой группе в списке предшествует специальный заголовок, отображающий название производителя.
+
+Первым шагом в добавлении поддержки липких заголовков является вызов метода groupBy() в массиве itemList, передающий первое слово каждой строки элемента (т.е. название производителя) в качестве значения селектора группы. Отредактируйте файл MainActivity.kt, найдите функцию MainScreen и измените ее следующим образом, чтобы сгруппировать элементы в сопоставленный список:
+*/
+
+@Composable
+fun MainScreen(itemArray: Array<out String>) {
+  val context = LocalContext.current
+  val groupedItems = itemArray.groupBy { it.substringBefore(' ') }
+.
+.
+
+
+
+37.2 Displaying the headers and items
+-------------------------------------
+
+/*
+Now that the list items have been grouped, the body of the LazyColumn needs to be modified. In terms of logic, this will require an outer loop that iterates through each of the manufacturer names, displaying the corresponding sticky header. The inner loop will display the items for each manufacturer. Within the MainScreen function, start by embedding the existing items() loop within a forEach loop on the groupedItems object:
+
+Теперь, когда элементы списка сгруппированы, необходимо изменить тело компонента LazyColumn. С точки зрения логики, для этого потребуется внешний цикл, который выполняет итерацию по каждому из названий производителей, отображая соответствующий липкий заголовок. Внутренний цикл отобразит элементы для каждого производителя. В рамках функции MainScreen начните с встраивания существующего цикла items() в цикл forEach для объекта groupedItems:
+*/
+
+@Composable
+fun MainScreen(itemArray: Array<out String>) {
+.
+.
+  LazyColumn {
+    groupedItems.forEach { (manufacturer, models) ->
+      items(itemArray) { model ->
+        MyListItem(item = model, onItemClick = onListItemClick)
+      }
+    }
+  }
+.
+.
+
+/*
+On each loop iteration, the forEach statement will call the trailing lambda, passing through the current selector value (manufacturer) and the items (models). Instead of displaying items from the ungrouped itemArray, the items() call now needs to be passed the models parameter:
+
+На каждой итерации цикла оператор forEach будет вызывать завершающую лямбду, передавая текущее значение селектора (производитель) и элементы (модели). Вместо отображения элементов из несгруппированного массива элементов вызову items() теперь необходимо передать параметр модели:
+*/
+
+items(models) { model ->
+  MyListItem(item = model, onItemClick = onListItemClick)
+}
+
+/*
+Before adding sticky headers, compile and run the app to confirm that all the items still appear in the list.
+
+Прежде чем добавлять липкие заголовки, скомпилируйте и запустите приложение, чтобы убедиться, что все элементы по-прежнему отображаются в списке.
+*/
+
+
+
+37.3 Adding sticky headers
+--------------------------
+
+/*
+For each manufacturer group, we now need to display the header. This involves a call to the LazyListScope stickyHeader function. Although the content of the header can be any combination of composables, an appropriately configured Text component is usually more than adequate for most requirements:
+
+Для каждой группы производителей нам теперь нужно отобразить заголовок. Для этого требуется вызов функции stickyHeader области видимости LazyListScope. Хотя содержимое заголовка может представлять собой любую комбинацию компонуемых элементов, соответствующим образом настроенный компонент Text обычно более чем удовлетворяет большинству требований:
+*/
+
+.
+.
+import androidx.compose.ui.graphics.Color
+.
+.
+LazyColumn() {
+  groupedItems.forEach { (manufacturer, models) ->
+    stickyHeader {
+      Text(
+        text = manufacturer,
+        color = Color.White,
+        modifier = Modifier
+          .background(Color.Gray)
+          .padding(5.dp)
+          .fillMaxWidth()
+      )
+    }
+    items(models) { model ->
+      MyListItem(item = model, onItemClick = onListItemClick)
+    }
+  }
+}
+
+/*
+If the code editor reports that stickyHeader is an experimental feature, mark the MainScreen function using the ExperimentalFoundationApi annotation as follows:
+
+Если редактор кода сообщает, что stickyHeader является экспериментальной функцией, отметьте функцию главного экрана, используя аннотацию ExperimentalFoundationApi следующим образом:
+*/
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun MainScreen(itemArray: Array<out String>) {
+.
+.
+
+/*
+After building and running the app, it should now appear as shown in Figure 37-1 with the manufacturer name appearing in the headers above each group:
+
+После создания и запуска приложения оно теперь должно выглядеть так, как показано на рисунке 37-1, с названием производителя, появляющимся в заголовках над каждой группой:
+*/
+
+Figure 37-1
+
+
+
+37.4 Reacting to scroll position
+--------------------------------
+
+/*
+In this final step of the LazyListDemo tutorial, we will modify the project to use scroll position detection. Once these changes have been made, scrolling beyond the item in list position 4 will display a button that, when clicked, returns the user to the top of the list.
+
+The button will appear at the bottom of the screen and needs to be placed outside of the LazyColumn so that it does not scroll out of view. To achieve this, we first need to place the LazyColumn declaration within a Box component. Within MainActivity.kt, edit the MainScreen function so that it reads as follows:
+
+
+На этом заключительном шаге разработки учебного проекта LazyListDemo мы изменим код, чтобы использовать определение положения прокрутки. Как только эти изменения будут внесены, при прокрутке за пределы элемента в позиции списка 4 отобразится кнопка, нажатие на которую возвращает пользователя в начало списка.
+
+Кнопка появится в нижней части экрана, и ее необходимо разместить за пределами компонента LazyColumn, чтобы она не прокручивалась вне поля зрения. Чтобы достичь этого, нам сначала нужно поместить объявление LazyColumn в компонент Box. В MainActivity.kt отредактируйте функцию MainScreen, чтобы она выглядела следующим образом:
+*/
+
+@Composable
+fun MainScreen(itemArray: Array<out String>) {
+  val context = LocalContext.current
+  val groupedItems = itemArray.groupBy { it.substringBefore(' ') }
+.
+.
+  Box {
+    LazyColumn() {
+      groupedItems.forEach { (manufacturer, models) ->
+.
+.
+      }
+.
+.
+    }
+
+/*
+Next, we need to request a LazyListState instance and pass it to the LazyColumn. Now is also a good opportunity to obtain the coroutine scope which will be needed to perform the scroll when the button is clicked.
+
+Далее нам нужно запросить экземпляр состояния LazyListState и передать его в компонент LazyColumn. Теперь также есть хорошая возможность получить область действия сопрограммы, которая потребуется для выполнения прокрутки при нажатии кнопки.
+*/
+
+.
+.
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.runtime.rememberCoroutineScope
+.
+.
+@Composable
+fun MainScreen(itemArray: Array<out String>) {
+  val listState = rememberLazyListState()
+  val coroutineScope = rememberCoroutineScope()
+.
+.
+  Box {
+    LazyColumn(
+      state = listState,
+      contentPadding = PaddingValues(bottom = 50.dp)
+    ) {
+      groupedItems.forEach { (manufacturer, models) ->
+.
+.
+
+/*
+In addition to applying the list state to the LazyColumn, the above changes also add padding to the bottom of the list. This will ensure that when the bottom of the list is reached there will be enough space for the button. The visibility of the button will be controlled by a Boolean variable which we will name displayButton. The value of this variable will be derived using the firstVisibleItemIndex property of the list state:
+
+В дополнение к применению состояния списка к компоненту LazyColumn вышеуказанные изменения также добавляют отступы в нижнюю часть списка. Это гарантирует, что при достижении нижней части списка будет достаточно места для кнопки. Видимостью кнопки будет управлять логическая переменная, которую мы назовем displayButton. Значение этой переменной будет получено с использованием свойства firstVisibleItemIndex состояния списка:
+*/
+
+@Composable
+fun MainScreen(itemArray: Array<out String>) {
+  val listState = rememberLazyListState()
+  val coroutineScope = rememberCoroutineScope()
+  val displayButton = listState.firstVisibleItemIndex > 5
+.
+.
+
+/*
+In the above declaration, the displayButton variable will be false unless the index of the first visible list item is greater than 5.
+
+В приведенном выше объявлении переменная displayButton будет иметь значение false, если индекс первого видимого элемента списка не превышает 5.
+*/
+
+
+
+37.5 Adding the scroll button
+-----------------------------
+
+/*
+Now that code has been added to detect the list scroll position, the button needs to be added. This will be called within the Box component and will be represented by the OutlinedButton composable. The OutlinedButton is one of the Material Design components and allows buttons to be drawn with an outline border with other effects such as border stroke patterns and rounded corners.
+
+Add an OutlinedButton inside the Box declaration and immediately after the LazyColumn:
+
+
+Теперь, когда добавлен код для определения положения прокрутки списка, необходимо добавить кнопку. Этот код будет вызываться в компоненте Box, применяется компонуемый элемент OutlinedButton. Кнопка с контуром является одним из компонентов Material Design и позволяет рисовать кнопки с контурной рамкой с другими эффектами, такими как обводки границ и закругленные углы.
+
+Добавьте компонент OutlinedButton внутри объявления Box и сразу после компонента LazyColumn:
+*/
+
+.
+.
+import androidx.compose.material3.*
+import kotlinx.coroutines.launch
+.
+.
+  Box {
+    LazyColumn(
+      state = listState
+    ) {
+  .
+  .
+      items(models) { model ->
+        MyListItem(item = model, onItemClick = onListItemClick)
+      }
+    }
+  
+    OutlinedButton(
+      onClick = {
+        coroutineScope.launch {
+          listState.scrollToItem(0)
+        }
+      },
+      border = BorderStroke(1.dp, Color.Gray),
+      shape = RoundedCornerShape(50),
+      colors = ButtonDefaults.outlinedButtonColors(
+        contentColor = Color.DarkGray
+      ),
+      modifier = Modifier.padding(5.dp)
+    ) {
+      Text( text = "Top" )
+    }
+    
+  }  
+.
+.
+
+/*
+Next, we need to control the position and visibility of the button so that it appears at the bottom center of the screen and is only visible when displayButton is true. This can be achieved by calling the OutlinedButton function from within an AnimatedVisibility composable, the purpose of which is to animate the hiding and showing of its child components (a topic covered in the chapter entitled “Compose Visibility Animation”). Make the following change to base the visibility of the OutlinedButton on the displayButton variable and to position it using CenterBottom alignment:
+
+Далее нам нужно управлять положением и видимостью кнопки так, чтобы она отображалась в нижней центральной части экрана и была видна только тогда, когда displayButton имеет значение true. Этого можно достичь, вызвав функцию OutlinedButton из составного элемента AnimatedVisibility, целью которого является анимация скрытия и отображения его дочерних компонентов (тема, рассмотренная в главе, озаглавленной “Создание анимации видимости”). Внесите следующее изменение, чтобы основать видимость выделенной кнопки на переменной display Button и расположить ее с помощью выравнивания по центру снизу:
+*/
+
+.
+.
+import androidx.compose.animation.AnimatedVisibility
+.
+.
+AnimatedVisibility(
+  visible = displayButton,
+  Modifier.align(Alignment.BottomCenter)) {
+    OutlinedButton(
+      onClick = {
+        coroutineScope.launch {
+          listState.scrollToItem(0)
+        }
+      },
+      border = BorderStroke(1.dp, Color.Gray),
+      shape = RoundedCornerShape(40),
+      colors = ButtonDefaults.outlinedButtonColors(
+        contentColor = Color.DarkGray
+      ),
+      modifier = Modifier.padding(5.dp)
+    ) {
+      Text(text = "Top")
+    }
+  }
+.
+.
+
+
+
+37.6 Testing the finished app
+-----------------------------
+
+/*
+Compile and run the app one last time and, once running, scroll down the list until the button appears. Continue scrolling until the bottom of the list to check that enough bottom padding was added to the LazyColumn so that there is no overlap with the button as shown in Figure 37-2 below:
+
+Скомпилируйте и запустите приложение в последний раз и после запуска прокрутите список вниз, пока не появится кнопка. Продолжайте прокручивать до конца списка, чтобы убедиться, что в столбец LazyColumn было добавлено достаточное количество нижнего отступа, чтобы кнопка не перекрывалась, как показано на рисунке 37-2 ниже:
+*/
+
+Figure 37-2
+
+/*
+Click on the Top button to return to the top of the list.
+
+Нажмите на кнопку "Вверх", чтобы вернуться в начало списка.
+*/
+
+
+
+37.7 Summary
+------------
+
+/*
+This chapter completed the LazyListDemo project by adding support for sticky headers and scroll position detection. The tutorial also introduced the Material Theme OutlinedButton and the use of lazy list content padding.
+
+В этой главе был завершен проект LazyListDemo, добавлена поддержка липких заголовков и определения положения прокрутки. В учебном проекте также была представлена кнопка OutlinedButton и использование заполнения содержимого ленивого списка.
+*/
+
