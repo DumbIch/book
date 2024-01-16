@@ -1,0 +1,493 @@
+36. A Compose Lazy List Tutorial
+================================
+
+/*
+Although the creation of lists using the standard compose Row and Column layout composables was covered in the previous chapter, in most situations, you will be more likely to use the LazyColumn and LazyRow components. Not only do these provide a more efficient way to display long lists of items, but the lazy composables also include additional features such as sticky headers and responding to changes in scroll position.
+
+This chapter will create a project demonstrating some of the key features of the LazyColumn and LazyRow components. In the next chapter, entitled “Lazy List Sticky Headers and Scroll Detection”, we will extend the project to include support for sticky headers and scroll position detection.
+
+
+Хотя в предыдущей главе было рассмотрено создание списков с использованием стандартных компонуемых макетов Row и Column, в большинстве ситуаций вы, скорее всего, будете использовать компоненты LazyColumn и LazyRow. Ленивые компоненты не только обеспечивают более эффективный способ отображения длинных списков элементов, но и включают в себя дополнительные функции, такие как липкие заголовки и реагирование на изменения положения прокрутки.
+
+В этой главе будет создан проект, демонстрирующий некоторые ключевые функции компонуемых элементов LazyColumn и LazyRow. В следующей главе, озаглавленной “Липкие заголовки ленивого списка и обнаружение прокрутки”, мы расширим проект, включив поддержку липких заголовков и определения положения прокрутки.
+*/
+
+
+
+36.1 Creating the LazyListDemo project
+--------------------------------------
+
+/*
+Launch Android Studio and select the New Project option from the welcome screen. When the new project dialog appears, choose the Empty Activity template before clicking on the Next button.
+
+Enter LazyListDemo into the Name field and specify com.example.lazylistdemo as the package name. Before clicking the Finish button, change the Minimum API level setting to API 26: Android 8.0 (Oreo).
+
+Within the MainActivity.kt file, delete the Greeting function and add a new empty composable named MainScreen:
+
+
+Запустите Android Studio и выберите опцию "Создать проект" на экране приветствия. Когда появится диалоговое окно "Создать проект", выберите пустой шаблон Empty Activity, прежде чем нажать кнопку "Далее".
+
+Введите LazyListDemo в поле "Имя" и укажите com.example.lazylistdemo в качестве имени пакета. Прежде чем нажать кнопку Готово, измените настройку минимального уровня API на API 26: Android 8.0 (Oreo).
+
+В файле MainActivity.kt удалите функцию Greeting и добавьте новый пустой компонуемый объект с именем MainScreen:
+*/
+
+@Composable
+fun MainScreen() {
+}
+
+/*
+Next, edit the OnCreate() method and GreetingPreview function to call MainScreen instead of Greeting.
+
+Затем отредактируйте метод onCreate() и функцию предварительного просмотра GreetingPreview, чтобы вызвать MainScreen вместо Greeting.
+*/
+
+
+
+36.2 Adding list data to the project
+------------------------------------
+
+/*
+Before designing the list we first need some data to provide the list item content. For this example, we will use an XML resource file containing the list items and read it into an array. The XML resource file for this project is included with the source code samples download within the XML folder. If you have not already done so, you can download the sample code from the following web page:
+
+Перед созданием списка нам сначала понадобятся некоторые данные, чтобы предоставить содержимое элемента списка. В этом примере мы будем использовать файл ресурсов XML, содержащий элементы списка, и считывать его в массив. Файл ресурсов XML для этого проекта включен в загрузку образцов исходного кода в папке XML. Если вы еще этого не сделали, вы можете загрузить пример кода со следующей веб-страницы:
+*/
+
+https://www.ebookfrenzy.com/retail/compose13/index.php
+
+/*
+Once the sample code has been unpacked, use the file system navigator for your operating system (i.e. Finder on macOS or Windows Explorer in Windows), locate the car_list.xml file in the XML folder, and copy it. Next, return to Android Studio, right-click on the app -> res > values folder in the Project tool window, and select Paste from the resulting menu as shown in Figure 36-1:
+
+Как только образец кода будет распакован, воспользуйтесь навигатором файловой системы для вашей операционной системы (например, Finder в macOS или Windows Explorer в Windows), найдите файл car_list.xml в папке XML и скопируйте его. Затем вернитесь в Android Studio, щелкните правой кнопкой мыши на папке app -> res > values в окне Project tool и выберите "Вставить" в появившемся меню, как показано на рисунке 36-1:
+*/
+
+Figure 36-1
+
+/*
+Finally, click the OK button in the “Copy” dialog to add the file to the project resources, making sure to keep the “Open in editor” option enabled:
+
+Наконец, нажмите кнопку “ОК” в диалоговом окне “Копировать”, чтобы добавить файл в ресурсы проекта, убедившись, что опция "Открыть в редакторе" включена:
+*/
+
+Figure 36-2
+
+/*
+Once the file has been added and loaded into the editor, it should read as follows:
+
+Как только файл будет добавлен и загружен в редактор, он должен выглядеть следующим образом:
+*/
+
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+<string-array name="car_array">
+<item>Buick Century</item>
+<item>Buick LaSabre</item>
+<item>Buick Roadmaster</item>
+<item>Buick Special Riviera</item>
+<item>Cadillac Couple De Ville</item>
+<item>Cadillac Eldorado</item>
+<item>Cadillac Fleetwood</item>
+<item>Cadillac Series 62</item>
+<item>Cadillac Seville</item>
+<item>Ford Fairlane</item>
+<item>Ford Galaxie 500</item>
+<item>Ford Mustang</item>
+<item>Ford Thunderbird</item>
+<item>GMC Le Mans</item>
+<item>Plymouth Fury</item>
+<item>Plymouth GTX</item>
+<item>Plymouth Roadrunner</item>
+</string-array>
+</resources>
+
+/*
+Note that the data is declared as being of type string-array and given the resource name car_array. This is the name by which the data will be referenced when it is read from the file.
+
+Обратите внимание, что данные объявлены как имеющие тип string-array и им присвоено имя ресурса car_array. Это имя, по которому будут ссылаться на данные при чтении из файла.
+*/
+
+
+
+36.3 Reading the XML data
+-------------------------
+
+/*
+Now that the XML file has been added to the project, it needs to be parsed and read into an array. This array will, in turn, provide the data in a format that the LazyColumn component can use. To achieve this, we will be using the getStringArray() method of the Android resources instance. Since the data needs to be initialized when the main activity is created, we can perform this task within the onCreate() method. Some changes are also required to pass the array through to our MainScreen function and to provide some sample data for the Preview composable.
+
+Edit the MainActivity.kt file and modify it so that it reads as follows:
+
+
+Теперь, когда XML-файл добавлен в проект, его необходимо проанализировать и прочитать в массив. Этот массив, в свою очередь, предоставит данные в формате, который может использовать компонент отложенного столбца. Чтобы достичь этого, мы будем использовать метод getStringArray() экземпляра Android resources. Поскольку данные необходимо инициализировать при создании главной активити, мы можем выполнить эту задачу в методе onCreate(). Также требуются некоторые изменения, чтобы передать массив в нашу функцию MainScreen и предоставить некоторые образцы данных для компонуемой функции Preview.
+
+Отредактируйте файл MainActivity.kt и измените его так, чтобы он выглядел следующим образом:
+*/
+.
+.
+class MainActivity : ComponentActivity() {
+  private var itemArray: Array<String>? = null
+  
+  override fun onCreate(savedInstanceState: Bundle?) {
+    itemArray = resources.getStringArray(R.array.car_array)
+    super.onCreate(savedInstanceState)
+    setContent {
+      LazyListDemoTheme {
+        Surface(
+          modifier = Modifier
+            .fillMaxSize(),
+          color = MaterialTheme.colorScheme.background
+        ) {
+          MainScreen(itemArray = itemArray as Array<out String>)
+        }
+      }
+    }
+  }
+}
+
+@Composable
+fun MainScreen(itemArray: Array<out String>) {
+}
+
+@Preview(showBackground = true)
+@Composable
+fun GreetingPreview() {
+  val itemArray: Array<String> = arrayOf("Cadillac Eldorado", "Ford Fairlane", "Plymouth Fury")
+  LazyListDemoTheme {
+    MainScreen(itemArray = itemArray)
+  }
+}
+
+
+
+36.4 Handling image loading
+---------------------------
+
+/*
+The project now has access to a list of cars with each item containing the car manufacturer and model. In addition to this text content, each list item will also display an image containing the manufacturer’s logo. These logos are hosted on a web server and will need to be downloaded and rendered within an Image composable. There are many factors to consider when downloading and displaying images within an app. For example, the images need to be downloaded asynchronously so that the app execution is not interrupted. The download process should also be able to recover from connectivity issues, and should also handle downsampling of the images to minimize memory usage. Instead of writing all the code to perform these tasks, this project will use an existing image loading library called Coil to perform these tasks automatically. If you would like to learn more about Coil, you can find information at the following URL:
+
+Теперь у проекта есть доступ к списку автомобилей, каждый элемент которого содержит производителя и модель автомобиля. В дополнение к этому текстовому содержимому, в каждом элементе списка также будет отображаться изображение, содержащее логотип производителя. Эти логотипы размещены на веб-сервере, и их необходимо будет загрузить и отобразить в виде компонуемого элемента изображения Image. При загрузке и отображении изображений в приложении необходимо учитывать множество факторов. Например, изображения необходимо загружать асинхронно, чтобы выполнение приложения не прерывалось. Процесс загрузки также должен быть способен восстанавливаться после проблем с подключением, а также должен обрабатывать пониженную дискретизацию изображений, чтобы минимизировать использование памяти. Вместо написания всего кода для выполнения этих задач в этом проекте будет использоваться существующая библиотека загрузки изображений под названием Coil для автоматического выполнения этих задач. Если вы хотите узнать больше о Coil, вы можете найти информацию по следующему адресу:
+*/
+
+https://coil-kt.github.io/coil/
+
+/*
+To add Coil support to the project, open the module-level build.gradle file (located in the Project tool window under Gradle Scripts -> build.gradle (Module: app)), locate the dependencies section, and add the Coil library:
+
+Чтобы добавить поддержку Coil в проект, откройте файл build.gradle на уровне модуля (расположенный в окне инструментов проекта в разделе Gradle Scripts -> build.gradle (модуль: app)), найдите раздел зависимостей и добавьте библиотеку Coil:
+*/
+
+dependencies {
+.
+.
+implementation('io.coil-kt:coil-compose:1.3.2')
+.
+.
+}
+
+/*
+After the library has been added, a warning bar (Figure 36-3) will appear indicating that the project needs to be re-synchronized to include the change:
+
+После добавления библиотеки появится панель предупреждения (рис. 36-3), указывающая на то, что проект необходимо повторно синхронизировать, чтобы включить изменения:
+*/
+
+Figure 36-3
+
+/*
+Click on the Sync Now link and wait while the synchronization process completes.
+
+The next step is to add a composable function to download an image and display it using the Image component. The naming convention for the image files is <manufacturer>_logo.png where <manufacturer> is replaced by the manufacturer name (Ford, Cadillac, etc.). Since each car string begins with the manufacturer name, we can construct the image name for each car entry by combining the first word of the string with “_logo.png”. Within the MainActivity.kt file, begin writing the ImageLoader composable function:
+
+
+Нажмите на ссылку Синхронизировать сейчас и дождитесь завершения процесса синхронизации.
+
+Следующий шаг - добавить компонуемую функцию для загрузки изображения и отображения его с помощью компонента Image. Соглашение об именовании файлов изображений - <производитель>_logo.png, где <производитель> заменяется названием производителя (Ford, Cadillac и т.д.). Поскольку каждая строка автомобиля начинается с названия производителя, мы можем создать название изображения для каждой записи автомобиля, объединив первое слово названия строка с “_logo.png”. В файле Main Activity.kt начните писать компонуемую функцию ImageLoader:
+*/
+
+import coil.annotation.ExperimentalCoilApi
+.
+.
+@OptIn(ExperimentalCoilApi::class)
+@Composable
+fun ImageLoader(item: String) {
+  val url = "https://www.ebookfrenzy.com/book_examples/car_logos/" + item.substringBefore(" ") + "_logo.png"
+}
+
+/*
+While constructing the full image URL, the code calls the Kotlin subStringBefore() method on the item string to obtain the text before the first space character.
+
+With the path to the image obtained, code now needs to be added to create an Image component rendered with the image:
+
+
+При построении полного URL-адреса изображения код вызывает метод Kotlin subStringBefore() в строке элемента, чтобы получить текст перед первым символом пробела.
+
+Мы сформировали путь к изображению, теперь необходимо добавить код для создания компонента изображения, отображаемого с конкретной картинкой:
+*/
+.
+.
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.*
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.unit.dp
+import coil.compose.rememberImagePainter
+.
+.
+@Composable
+fun ImageLoader(item: String) {
+  val url = "https://www.ebookfrenzy.com/book_examples/car_logos/" + item.substringBefore(" ") + "_logo.png"
+  Image(
+    painter = rememberImagePainter(url),
+    contentDescription = "car image",
+    contentScale = ContentScale.Fit,
+    modifier = Modifier.size(75.dp)
+  )
+}
+
+/*
+The above code creates an Image and requests an image painter via a call to the Coil rememberImagePainter() function, passing through the image URL. The image is scaled to fit the size of the Image component, the height, and width of which is restricted via a modifier to 75dp.
+
+As the logo images will be downloaded, the project manifest needs to be updated to add Internet access permission. Within the Project tool window, open the app -> manifests -> AndroidManifest.xml file and add the Internet permission element as follows:
+
+
+Приведенный выше код создает изображение и запрашивает источник изображения (image painter) через вызов функции Coil rememberImagePainter(), передавая URL-адрес изображения. Изображение масштабируется в соответствии с размером компонента изображения, высота и ширина которого ограничены с помощью модификатора до 75 dp.
+
+Поскольку изображения логотипов будут загружены из сети, необходимо обновить манифест проекта, чтобы добавить разрешение на доступ в Интернет. В окне Project tool откройте приложение -> манифесты -> AndroidManifest.xml файл и добавьте элемент разрешения доступа в Интернет следующим образом:
+*/
+
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+xmlns:tools="http://schemas.android.com/tools">
+<uses-permission android:name="android.permission.INTERNET" />
+.
+.
+/*
+At the time of writing, the Compose Preview panel did not support the rendering of images using Coil. To test that the ImageLoader works, make the following addition to the MainScreen function:
+
+На момент написания статьи панель предварительного просмотра Compose не поддерживала отрисовку изображений с помощью Coil. Чтобы проверить работу ImageLoader, внесите следующее дополнение в функцию главного экрана:
+*/
+
+@Composable
+fun MainScreen(itemArray: Array<out String>) {
+  ImageLoader("Plymouth GTX")
+}
+
+/*
+With the change made, run the app on an emulator or device where the Plymouth logo should appear as illustrated in Figure 36-4:
+
+После внесения изменений запустите приложение на эмуляторе или устройстве, на котором должен появиться логотип Plymouth, как показано на рисунке 36-4:
+*/
+
+Figure 36-4
+
+
+
+36.5 Designing the list item composable
+---------------------------------------
+
+/*
+At this point in the tutorial, we have an array of list items and a mechanism for loading images. The next requirement is a composable to display each item within the list. This will consist of a Row containing an ImageLoader and a Text component displaying the list item string. To provide more customization options such as elevation effects and rounded corners, the Row will be placed within a Card component. Add the MyListItem function to the MainActivity.kt file so that it reads as follows:
+
+На текущем этапе изучения материала у нас есть массив элементов списка и механизм загрузки изображений. Следующим требованием является создание компонуемого элемента для отображения каждого элемента из списка. Он будет состоять из строки, содержащей ImageLoader, и текстового компонента, отображающего строку элемента списка. Чтобы предоставить больше возможностей настройки, таких как эффекты отбрасывания тени и закругленные углы, строка будет размещена внутри компонента Card. Добавьте функцию MyListItem в файл MainActivity.kt, чтобы она выглядела следующим образом:
+*/
+.
+.
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.ui.Alignment
+.
+.
+@Composable
+fun MyListItem(item: String) {
+  Card(
+    colors = CardDefaults.cardColors(
+      containerColor = MaterialTheme.colorScheme.background
+    ),
+    modifier = Modifier
+      .padding(8.dp)
+      .fillMaxWidth(),
+    elevation = CardDefaults.cardElevation(defaultElevation = 5.dp)
+  ) {
+    Row(
+      verticalAlignment = Alignment.CenterVertically
+    ) {
+      ImageLoader(item)
+      Spacer(modifier = Modifier.width(8.dp))
+      Text(
+        text = item,
+        style = MaterialTheme.typography.headlineSmall,
+        modifier = Modifier.padding(8.dp)
+      )
+    }
+  }
+}
+
+/*
+Modify the MainScreen function to call the MyListItem composable as follows before testing the app on a device or emulator:
+
+Измените функцию MainScreen, чтобы вызвать компонуемую функцию MyListItem следующим образом, прежде чем тестировать приложение на устройстве или эмуляторе:
+*/
+
+@Composable
+fun MainScreen(itemArray: Array<out String>) {
+  MyListItem("Buick Roadmaster")
+}
+
+/*
+Once the app is running, the list item should appear as illustrated in Figure 36-5. Note that this time the ImageLoader function has loaded the Buick logo to match the car description:
+
+Как только приложение запустится, элемент списка должен появиться, как показано на рисунке 36-5. Обратите внимание, что на этот раз функция ImageLoader загрузила логотип Buick в соответствии с описанием автомобиля:
+*/
+
+Figure 36-5
+
+
+
+36.6 Building the lazy list
+---------------------------
+
+/*
+With the preparation work complete, the project is ready for the addition of the LazyColumn component.
+
+После завершения подготовительных работ проект готов к добавлению компонента LazyColumn.
+*/
+.
+.
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+.
+.
+
+@Composable
+fun MainScreen(itemArray: Array<out String>) {
+  LazyColumn {
+    items(itemArray) { model ->
+      MyListItem(item = model)
+    }
+  }
+}
+
+/*
+All this code does is call the LazyColumn composable and use the items() function of the LazyListScope to iterate through each element of the itemArray, passing each through to the MyListItem function.
+
+Все, что делает этот код, - это вызывает компонуемый элемент LazyColumn и использует функцию items() области видимости LazyListScope для перебора элементов itemArray, передавая каждый в функцию MyListItem.
+*/
+
+
+
+36.7 Testing the project
+------------------------
+
+/*
+Compile and run the project once again and verify that a scrollable list resembling that shown in Figure 36-6 below appears on the device or emulator screen:
+
+Скомпилируйте и запустите проект еще раз и убедитесь, что на экране устройства или эмулятора появляется прокручиваемый список, похожий на показанный на рисунке 36-6 ниже:
+*/
+
+Figure 36-6
+
+
+
+36.8 Making list items clickable
+--------------------------------
+
+/*
+It is common for the items in a list to do something when clicked. For example, selecting an item for the list might perform an action or even navigate to another screen. The final step in this chapter is to make the items in the list clickable. For this example, we will configure the list items to display a toast message to the user containing the text content of the item. Created using the Android Toast class, toast messages are small notifications that appear on the screen without interrupting the currently visible activity.
+
+Within the MainScreen function, we need to declare an event handler to be called when the user clicks on a list item. This handler will be passed the text of the current item which it will display within a toast message. Locate the MainScreen function in the MainActivity.kt file and modify it as follows:
+
+
+Элементы в списке обычно что-то делают при нажатии. Например, выбор элемента в списке может привести к выполнению действия или даже переходу на другой экран. Заключительный шаг в этой главе - сделать элементы в списке интерактивными. В этом примере мы настроим элементы списка для отображения пользователю всплывающего сообщения, содержащего текстовое содержимое элемента. Созданные с использованием класса Android Toast, всплывающие сообщения представляют собой небольшие уведомления, которые отображаются на экране, не прерывая видимую в данный момент активити.
+
+В функции MainScreen нам нужно объявить обработчик событий, который будет вызываться, когда пользователь нажимает на элемент списка. Этому обработчику будет передан текст текущего элемента, который он отобразит во всплывающем сообщении. Найдите функцию MainScreen в файле MainActivity.kt и измените ее следующим образом:
+*/
+.
+.
+import android.widget.Toast
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.foundation.*
+.
+.
+
+@Composable
+fun MainScreen(itemArray: Array<out String>) {
+  val context = LocalContext.current
+  val onListItemClick = { text : String ->
+    Toast.makeText(
+      context,
+      text,
+      Toast.LENGTH_SHORT
+    ).show()
+  }
+  
+  LazyColumn {
+    items(itemArray) { model ->
+      MyListItem(item = model)
+    }
+  }
+  
+}
+
+/*
+Next, both the MyListItem function and how it is called need to be updated to pass through a reference to the event handler:
+
+Далее, необходимо обновить как функцию MyListItem, так и способ ее вызова, чтобы передать ссылку на обработчик события:
+*/
+
+@Composable
+fun MainScreen(itemArray: Array<out String>) {
+.
+.
+  LazyColumn {
+    items(itemArray) { model ->
+      MyListItem(item = model, onItemClick = onListItemClick)
+    }
+  }
+}
+
+@Composable
+fun MyListItem(item: String, onItemClick: (String) -> Unit) {
+}
+
+/*
+Before testing this new behavior, the last task is to add a clickable modifier to the Card component within MyListItem. This needs to call the onListItemClick handler, passing it the current item:
+
+Перед тестированием этого нового поведения последней задачей является добавление кликабельного модификатора к компоненту Card в MyListItem. Для этого необходимо вызвать обработчик onListItemClick, передав ему текущий элемент:
+*/
+
+@Composable
+fun MyListItem(item: String, onItemClick: (String) -> Unit) {
+  Card(
+    Modifier
+      .padding(8.dp)
+      .fillMaxWidth()
+      .clickable { onItemClick(item) },
+    shape = RoundedCornerShape(10.dp),
+    elevation = 5.dp
+  ) {
+.
+.
+
+/*
+Compile and run the app and test that clicking on an item displays the toast message containing the text of the selected item:
+
+Скомпилируйте и запустите приложение и проверьте, что при нажатии на элемент отображается всплывающее сообщение, содержащее текст выбранного элемента:
+*/
+
+Figure 36-7
+
+
+
+36.9 Summary
+------------
+
+/*
+This chapter began by exploring the use of an XML resource for storing data and demonstrated how to read that data into an array during activity initialization. We then introduced the Coil image loading library and explained how it can be used to download and display images over an Internet connection with minimal coding. Next, the tutorial created a scrollable list based on the XML data, using the LazyColumn layout composable and the Card component. Finally, we added code to make each item in the list respond to click events.
+
+Although we now have a running example of a Compose lazy list, the project created so far does not yet take advantage of other features of the Compose lazy list components, such as sticky headers and scroll position detection. The next chapter, “Lazy List Sticky Headers and Scroll Detection”, will extend the LazyListDemo project to add these features.
+
+
+
+Эта глава началась с изучения использования XML-ресурса для хранения данных и продемонстрировала, как считывать эти данные в массив во время инициализации действия. Затем мы представили библиотеку загрузки изображений Coil и объяснили, как ее можно использовать для загрузки и отображения изображений через Интернет с минимальными затратами на кодирование. Далее в руководстве был создан прокручиваемый список на основе XML-данных, используя компонуемый макет LazyColumn и компонент Card. Наконец, мы добавили код, позволяющий каждому элементу в списке реагировать на события щелчка.
+
+Хотя теперь у нас есть работающий пример создания ленивого списка, созданный на данный момент проект еще не использует преимущества других функций компонентов создания ленивого списка, таких как липкие заголовки и определение положения прокрутки. В следующей главе, “Липкие заголовки ленивого списка и обнаружение прокрутки”, будет расширен проект LazyListDemo, чтобы добавить эти функции.
+*/
+
