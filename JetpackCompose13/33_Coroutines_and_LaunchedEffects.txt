@@ -1,0 +1,428 @@
+33. Coroutines and LaunchedEffects in Jetpack Compose
+=====================================================
+
+/*
+When an Android application is first started, the runtime system creates a single thread in which all application components will run by default. This thread is generally referred to as the main thread. The primary role of the main thread is to handle the user interface in terms of event handling and interaction with views in the user interface. Any additional components that are started within the application will, by default, also run on the main thread.
+
+Any code within an application that performs a time-consuming task using the main thread will cause the entire application to appear to lock up until the task is completed. This will typically result in the operating system displaying an “Application is not responding” warning to the user. This is far from the desired behavior for any application. Fortunately, Kotlin provides a lightweight alternative in the form of Coroutines. In this chapter, we will introduce Coroutines, including terminology such as dispatchers, coroutine scope, suspend functions, coroutine builders, and structured concurrency. The chapter will also explore channel-based communication between coroutines and explain how to safely launch coroutines from within composable functions.
+
+
+При первом запуске приложения Android система выполнения создает единственный поток, в котором по умолчанию будут выполняться все компоненты приложения. Этот поток обычно называется основным потоком. Первостепенная роль основного потока заключается в обработке пользовательского интерфейса с точки зрения обработки событий и взаимодействия с представлениями в пользовательском интерфейсе. Любые дополнительные компоненты, которые запускаются в приложении, по умолчанию также будут запускаться в основном потоке.
+
+Любой код в приложении, выполняющий трудоемкую задачу с использованием основного потока, приведет к тому, что все приложение будет заблокировано до завершения задачи. Обычно это приводит к тому, что операционная система выводит пользователю предупреждение “Приложение не отвечает” (“Application is not responding” - ANR). Это далеко от желаемого поведения для любого приложения. К счастью, Kotlin предоставляет легковесную альтернативу потокам в виде сопрограмм (Coroutines). В этой главе мы познакомимся с сопрограммами, включая такую терминологию, как диспетчеры, область действия сопрограммы, функции приостановки, построители сопрограмм и структурированный параллелизм. В этой главе также будет рассмотрено взаимодействие между сопрограммами на основе каналов и объяснено, как безопасно запускать сопрограммы из компонуемых функций.
+*/
+
+
+
+33.1 What are coroutines?
+-------------------------
+
+/*
+Coroutines are blocks of code that execute asynchronously without blocking the thread from which they are launched. Coroutines can be implemented without having to worry about building complex multi-tasking implementations or directly managing multiple threads. Because of the way they are implemented, coroutines are much more efficient and less resource-intensive than using traditional multi-threading options. Coroutines also make for code that is much easier to write, understand and maintain since it allows code to be written sequentially without having to write callbacks to handle thread-related events and results.
+
+Although a relatively recent addition to Kotlin, there is nothing new or innovative about coroutines. Coroutines in one form or another have existed in programming languages since the 1960s and are based on a model known as Communicating Sequential Processes (CSP). In fact, Kotlin still uses multi-threading behind the scenes, though it does so highly efficiently.
+
+
+Сопрограммы - это блоки кода, которые выполняются асинхронно, не блокируя поток, из которого они запускаются. Сопрограммы могут быть реализованы без необходимости беспокоиться о создании сложных многозадачных реализаций или непосредственном управлении несколькими потоками. Благодаря тому, как они реализованы, сопрограммы намного эффективнее и менее ресурсоемки, чем использование традиционных многопоточных опций. Сопрограммы также позволяют создавать код, который намного проще писать, понимать и поддерживать, поскольку он позволяет писать код последовательно без необходимости писать обратные вызовы для обработки событий и результатов, связанных с потоками.
+
+Несмотря на относительно недавнее дополнение к Kotlin, в сопрограммах нет ничего нового или инновационного. Сопрограммы в той или иной форме существуют в языках программирования с 1960-х годов и основаны на модели, известной как взаимодействие последовательных процессов (CSP). На самом деле, Kotlin по-прежнему использует многопоточность за кулисами, хотя и делает это очень эффективно.
+*/
+
+
+
+33.2 Threads vs. coroutines
+---------------------------
+
+/*
+A problem with threads is that they are a finite resource and expensive in terms of CPU capabilities and system overhead. In the background, a lot of work is involved in creating, scheduling, and destroying a thread. Although modern CPUs can run large numbers of threads, the actual number of threads that can be run in parallel at any one time is limited by the number of CPU cores (though newer CPUs have 8 or more cores, most Android devices contain CPUs with 4 cores). When more threads are required than there are CPU cores, the system has to perform thread scheduling to decide how the execution of these threads is to be shared between the available cores.
+
+To avoid these overheads, instead of starting a new thread for each coroutine and then destroying it when the coroutine exits, Kotlin maintains a pool of active threads and manages how coroutines are assigned to those threads. When an active coroutine is suspended it is saved by the Kotlin runtime and another coroutine resumed to take its place. When the coroutine is resumed, it is simply restored to an existing unoccupied thread within the pool to continue executing until it either completes or is suspended. Using this approach, a limited number of threads are used efficiently to execute asynchronous tasks with the potential to perform large numbers of concurrent tasks without the inherent performance degeneration that would occur using standard multithreading.
+
+
+Проблема с потоками заключается в том, что они являются ограниченным ресурсом и дороги с точки зрения возможностей процессора и системных накладных расходов. В фоновом режиме много работы связано с созданием, планированием и уничтожением потока. Хотя современные процессоры могут запускать большое количество потоков, фактическое количество потоков, которые могут выполняться параллельно в любой момент времени, ограничено количеством ядер процессора (хотя новые процессоры имеют 8 или более ядер, большинство устройств Android содержат процессоры с 4 ядрами). Когда требуется больше потоков, чем имеется ядер процессора, система должна выполнить планирование потоков, чтобы решить, как распределить выполнение этих потоков между доступными ядрами.
+
+Чтобы избежать этих накладных расходов, вместо запуска нового потока для каждой сопрограммы и последующего его уничтожения при завершении сопрограммы, Kotlin поддерживает пул активных потоков и управляет назначением сопрограмм этим потокам. Когда активная сопрограмма приостанавливается, она сохраняется средой выполнения Kotlin, и другая сопрограмма возобновляется, чтобы занять ее место. Когда сопрограмма возобновляется, она просто восстанавливается в существующий незанятый поток в пуле, чтобы продолжать выполнение до тех пор, пока она либо не завершится, либо не будет приостановлена. Используя этот подход, ограниченное число потоков эффективно используется для выполнения асинхронных задач с возможностью выполнения большого количества параллельных задач без присущего им снижения производительности, которое произошло бы при использовании стандартной многопоточности.
+*/
+
+
+
+33.3 Coroutine Scope
+--------------------
+
+/*
+All coroutines must run within a specific scope which allows them to be managed as groups instead of as individual coroutines. This is particularly important when canceling and cleaning up coroutines and ensuring that coroutines do not “leak” (in other words continue running in the background when they are no longer needed by the app). By assigning coroutines to a scope they can, for example, all be canceled in bulk when they are no longer needed.
+
+Kotlin and Android provide some built-in scopes as well as the option to create custom scopes using the CoroutineScope class. The built-in scopes can be summarized as follows:
+
+• GlobalScope – GlobalScope is used to launch top-level coroutines which are tied to the entire lifecycle of the application. Since this has the potential for coroutines in this scope to continue running when not needed (for example when an Activity exits) use of this scope is not recommended for use in Android applications. Coroutines running in GlobalScope are considered to be using unstructured concurrency.
+
+• ViewModelScope – Provided specifically for use in ViewModel instances when using the Jetpack architecture ViewModel component. Coroutines launched in this scope from within a ViewModel instance are automatically canceled by the Kotlin runtime system when the corresponding ViewModel instance is destroyed.
+
+• LifecycleScope - Every lifecycle owner has associated with it a LifecycleScope. This scope is canceled when the corresponding lifecycle owner is destroyed making it particularly useful for launching coroutines from within composables and activities.
+
+For most requirements, the best way to access a coroutine scope from within a composable is to make a call to the rememberCoroutineScope() function as follows:
+
+
+
+Все сопрограммы должны выполняться в определенной области, что позволяет управлять ими как группами, а не как отдельными сопрограммами. Это особенно важно при отмене и очистке сопрограмм и обеспечении того, чтобы сопрограммы не “протекали” (другими словами, чтобы они не продолжали работать в фоновом режиме, когда они больше не нужны приложению). Назначая сопрограммам области действия, можно, например, массово отменить их всех, когда в них больше нет необходимости.
+
+Kotlin и Android предоставляют некоторые встроенные области, а также возможность создавать пользовательские области с помощью класса CoroutineScope. Встроенные области можно структурировать следующим образом:
+
+• GlobalScope – используется для запуска сопрограмм верхнего уровня, которые привязаны ко всему жизненному циклу приложения. Поскольку это потенциально может привести к тому, что сопрограммы в этой области продолжат выполняться, когда в этом нет необходимости (например, при завершении действия), использование этой области не рекомендуется для использования в приложениях Android. Считается, что сопрограммы, запущенные в GlobalScope, используют неструктурированный параллелизм.
+
+• ViewModelScope – предоставляется специально для использования в экземплярах ViewModel при использовании компонента ViewModel архитектуры Jetpack. Сопрограммы, запущенные в этой области из экземпляра ViewModel, автоматически отменяются системой выполнения Kotlin при уничтожении соответствующего экземпляра ViewModel.
+
+• LifecycleScope - с каждым владельцем жизненного цикла связана область жизненного цикла. Эта область отменяется при уничтожении соответствующего владельца жизненного цикла, что делает ее особенно полезной для запуска сопрограмм из компонуемых элементов и активити.
+
+Для большинства требований лучший способ получить доступ к области сопрограммы из компонуемого объекта - это вызвать функцию rememberCoroutineScope() следующим образом:
+*/
+
+val coroutineScope = rememberCoroutineScope()
+
+/*
+The coroutineScope declares the dispatcher that will be used to run coroutines (though this can be overridden) and must be referenced each time a coroutine is started if it is to be included within the scope. All of the running coroutines in a scope can be canceled via a call to the cancel() method of the scope instance:
+
+CoroutineScope объявляет диспетчер, который будет использоваться для запуска сопрограмм (хотя это может быть переопределено), и на него необходимо ссылаться каждый раз при запуске сопрограммы, если он должен быть включен в область действия. Все запущенные сопрограммы в области видимости могут быть отменены с помощью вызова метода cancel() экземпляра области видимости:
+*/
+
+coroutineScope.cancel()
+
+
+
+33.4 Suspend functions
+----------------------
+
+/*
+A suspend function is a special type of Kotlin function that contains the code of a coroutine. It is declared using the Kotlin suspend keyword which indicates to Kotlin that the function can be paused and resumed later, allowing long-running computations to execute without blocking the main thread.
+
+The following is an example suspend function:
+
+
+Функция приостановки - это особый тип функции Kotlin, содержащий код сопрограммы. Она объявляется с использованием ключевого слова Kotlin suspend, которое указывает Kotlin, что функция может быть приостановлена и возобновлена позже, позволяя выполнять длительные вычисления без блокировки основного потока.
+
+Ниже приведен пример функции приостановки:
+*/
+
+suspend fun mySlowTask() {
+  // Perform long-running task here
+}
+
+
+
+33.5 Coroutine dispatchers
+--------------------------
+
+/*
+Kotlin maintains threads for different types of asynchronous activity and, when launching a coroutine, you have the option to specify a specific dispatcher from the following options:
+
+• Dispatchers.Main – Runs the coroutine on the main thread and is suitable for coroutines that need to make changes to the UI and as a general-purpose option for performing lightweight tasks.
+
+• Dispatchers.IO – Recommended for coroutines that perform network, disk, or database operations.
+
+• Dispatchers.Default – Intended for CPU-intensive tasks such as sorting data or performing complex calculations.
+
+The dispatcher is responsible for assigning coroutines to appropriate threads and suspending and resuming the coroutine during its lifecycle. The following code, for example, launches a coroutine using the IO dispatcher:
+
+
+
+Kotlin поддерживает потоки для различных типов асинхронной активности, и при запуске сопрограммы у вас есть возможность указать конкретного диспетчера из следующих опций:
+
+• Dispatchers.Main – запускает сопрограмму в основном потоке и подходит для сопрограмм, которым необходимо внести изменения в пользовательский интерфейс, а также в качестве опции общего назначения для выполнения облегченных задач.
+
+• Dispatchers.IO - Рекомендуется для сопрограмм, выполняющих операции с сетью, диском или базой данных.
+
+• Dispatchers.Default – Предназначен для задач с интенсивным использованием процессора, таких как сортировка данных или выполнение сложных вычислений.
+
+Диспетчер отвечает за назначение сопрограмм соответствующим потокам и приостановку и возобновление сопрограммы в течение ее жизненного цикла. Следующий код, например, запускает сопрограмму с помощью диспетчера ввода-вывода:
+*/
+.
+.
+coroutineScope.launch(Dispatchers.IO) {
+  performSlowTask()
+}
+.
+.
+
+/*
+In addition to the predefined dispatchers, it is also possible to create dispatchers for your own custom thread pools.
+
+В дополнение к предопределенным диспетчерам, также возможно создавать диспетчеры для ваших собственных пользовательских пулов потоков.
+*/
+
+
+
+33.6 Coroutine builders
+-----------------------
+
+/*
+The coroutine builders bring together all of the components covered so far and launch the coroutines so that they start executing. For this purpose, Kotlin provides the following six builders:
+
+• launch – Starts a coroutine without blocking the current thread and does not return a result to the caller. Use this builder when calling a suspend function from within a traditional function, and when the results of the coroutine do not need to be handled (sometimes referred to as “fire and forget” coroutines).
+
+• async – Starts a coroutine and allows the caller to wait for a result using the await() function without blocking the current thread. Use async when you have multiple coroutines that need to run in parallel. The async builder can only be used from within another suspend function.
+
+• withContext – This allows a coroutine to be launched in a different context from that used by the parent coroutine. A coroutine running using the Main context could, for example, launch a child coroutine in the Default context using this builder. The withContext builder also provides a useful alternative to async when returning results from a coroutine.
+
+• coroutineScope – The coroutineScope builder is ideal for situations where a suspend function launches multiple coroutines that will run in parallel and where some action needs to take place only when all the coroutines reach completion. If those coroutines are launched using the coroutineScope builder, the calling function will not return until all child coroutines have completed. When using coroutineScope, a failure in any of the coroutines will result in the cancellation of all other coroutines.
+
+• supervisorScope – Similar to the coroutineScope outlined above, with the exception that a failure in one child does not result in cancellation of the other coroutines.
+
+• runBlocking - Starts a coroutine and blocks the current thread until the coroutine reaches completion. This is typically the opposite of what is wanted from coroutines but is useful for testing code and integrating legacy code and libraries. Otherwise to be avoided.
+
+
+
+Построители сопрограмм объединяют все компоненты, рассмотренные до сих пор, и запускают сопрограммы, чтобы они начали выполняться. Для этой цели Kotlin предоставляет следующие шесть построителей:
+
+• launch – запускает сопрограмму, не блокируя текущий поток, и не возвращает результат вызывающей стороне. Используйте этот построитель при вызове функции приостановки из традиционной функции и когда результаты сопрограммы не нуждаются в обработке (иногда их называют сопрограммами “запустить и забыть”).
+
+• async – запускает сопрограмму и позволяет вызывающей стороне ожидать результата с помощью функции await(), не блокируя текущий поток. Используйте построитель async, когда у вас есть несколько сопрограмм, которые должны выполняться параллельно. Построитель async можно использовать только из другой функции приостановки.
+
+• withContext – позволяет запускать сопрограмму в контексте, отличном от контекста, используемого родительской сопрограммой. Используя этот построитель, сопрограмма, запущенная с использованием основного контекста, может, например, запускать дочернюю сопрограмму в контексте по умолчанию. Построитель withContext также предоставляет полезную альтернативу построителю async при возврате результатов из сопрограммы.
+
+• coroutineScope – идеально подходит для ситуаций, когда функция приостановки запускает несколько сопрограмм, которые будут выполняться параллельно, и когда необходимо выполнить какое-либо действие только после завершения всех сопрограмм. Если эти сопрограммы запущены с помощью построителя coroutineScope, вызывающая функция не вернется до завершения всех дочерних сопрограмм. При использовании coroutineScope сбой в любой из сопрограмм приведет к отмене всех остальных сопрограмм.
+
+• supervisorScope – аналогично описанной выше coroutineScope, за исключением того, что сбой в одной дочерней программе не приводит к отмене других сопрограмм.
+
+• runBlocking - запускает сопрограмму и блокирует текущий поток до тех пор, пока сопрограмма не достигнет завершения. Обычно это противоположно тому, что требуется от сопрограмм, но полезно для тестирования кода и интеграции устаревшего кода и библиотек. В противном случае следует избегать.
+*/
+
+
+
+33.7 Jobs
+---------
+
+/*
+Each call to a coroutine builder such as launch or async returns a Job instance which can, in turn, be used to track and manage the lifecycle of the corresponding coroutine. Subsequent builder calls from within the coroutine create new Job instances which will become children of the immediate parent Job forming a parent-child relationship tree where canceling a parent Job will recursively cancel all its children. Canceling a child does not, however, cancel the parent, though an uncaught exception within a child created using the launch builder may result in the cancellation of the parent (this is not the case for children created using the async builder which encapsulates the exception in the result returned to the parent).
+
+The status of a coroutine can be identified by accessing the isActive, isCompleted, and isCancelled properties of the associated Job object. In addition to these properties, several methods are also available on a Job instance. A Job and all of its children may, for example, be canceled by calling the cancel() method of the Job object, while a call to the cancelChildren() method will cancel all child coroutines.
+
+The join() method can be called to suspend the coroutine associated with the job until all of its child jobs have completed. To perform this task and cancel the Job once all child jobs have completed, simply call the cancelAndJoin() method.
+
+This hierarchical Job structure together with coroutine scopes form the foundation of structured concurrency, the goal of which is to ensure that coroutines do not run for longer than they are required without the need to manually keep references to each coroutine.
+
+
+
+Каждый вызов построителя сопрограмм, такого как launch или async, возвращает экземпляр задания (Job), который, в свою очередь, может использоваться для отслеживания жизненного цикла соответствующей сопрограммы и управления им. Последующие вызовы построителя из сопрограммы создают новые экземпляры заданий, которые станут дочерними по отношению к непосредственному родительскому заданию, формируя дерево отношений родитель-потомок, где отмена родительского задания рекурсивно отменит все его дочерние элементы. Отмена дочернего элемента, однако, не отменяет родительского, хотя неперехваченное исключение в дочернем элементе, созданном с помощью построителя launch, может привести к отмене родительского элемента (это не относится к дочерним элементам, созданным с помощью построителя async, который инкапсулирует исключение в результат, возвращаемый родительскому элементу).
+
+Статус сопрограммы можно определить, обратившись к свойствам isActive, IsCompleted и isCancelled связанного объекта Job. В дополнение к этим свойствам в экземпляре Job также доступно несколько методов. Задание и все его дочерние элементы могут быть, например, отменены вызовом метода cancel() объекта Job, в то время как вызов метода cancelChildren() отменит все дочерние сопрограммы.
+
+Метод join() может быть вызван для приостановки сопрограммы, связанной с заданием, до завершения всех ее дочерних заданий. Чтобы выполнить эту задачу и отменить задание после завершения всех дочерних заданий, просто вызовите метод cancelAndJoin().
+
+Эта иерархическая структура заданий вместе с областями действия сопрограмм формируют основу структурированного параллелизма, целью которого является обеспечение того, чтобы сопрограммы не выполнялись дольше, чем требуется, без необходимости вручную сохранять ссылки на каждую сопрограмму.
+*/
+
+
+
+33.8 Coroutines – suspending and resuming
+-----------------------------------------
+
+/*
+To gain a better understanding of coroutine suspension, it helps to see some examples of coroutines in action. To start with, let’s assume a simple Android app containing a button that, when clicked, calls a suspend function named performSlowTask(). The code for this might read as follows:
+
+Чтобы лучше понять приостановку сопрограммы, полезно увидеть несколько примеров сопрограмм в действии. Для начала давайте предположим, что простое приложение для Android содержит кнопку, при нажатии на которую вызывается функция приостановки с именем performSlowTask(). Код для этого может выглядеть следующим образом:
+*/
+
+val coroutineScope = rememberCoroutineScope()
+Button(
+  onClick = {
+    coroutineScope.launch {
+      performSlowTask()
+    }
+  }
+) {
+  Text(text = "Click Me")
+}
+
+/*
+In the above code, a coroutine scope is obtained and referenced in the call to the launch builder which, in turn, calls the performSlowTask() suspend function. Next, we can declare the performSlowTask() suspend function as follows:
+
+В приведенном выше коде получена область действия сопрограммы, относительно которой производится вызов построителя launch, который, в свою очередь, вызывает функцию приостановки performSlowTask(). Далее мы можем объявить функцию приостановки performSlowTask() следующим образом:
+*/
+
+suspend fun performSlowTask() {
+  println("performSlowTask before")
+  delay(5000) // simulates long-running task
+  println("performSlowTask after")
+}
+
+/*
+As implemented, all the function does is output diagnostic messages before and after performing a 5-second delay, simulating a long-running task. While the 5-second delay is in effect, the user interface will continue to be responsive because the main thread is not being blocked. To understand why it helps to explore what is happening behind the scenes.
+
+A click on the button launches the performSlowTask() suspend function as a coroutine. This function then calls the Kotlin delay() function passing through a time value. In fact, the built-in Kotlin delay() function is itself implemented as a suspend function so is also launched as a coroutine by the Kotlin runtime environment. The code execution has now reached what is referred to as a suspend point which will cause the performSlowTask() coroutine to be suspended while the delay coroutine is running. This frees up the thread on which performSlowTask() was running and returns control to the main thread so that the UI is unaffected.
+
+Once the delay() function reaches completion, the suspended coroutine will be resumed and restored to a thread from the pool where it can display the log message and return.
+
+When working with coroutines in Android Studio suspend points within the code editor are marked as shown in the figure below:
+
+
+
+В данной реализации все, что делает функция, - это вывод диагностического сообщения до и после выполнения 5-секундной задержки, имитируя длительно выполняемую задачу. Пока действует 5-секундная задержка, пользовательский интерфейс будет продолжать реагировать, поскольку основной поток не блокируется. Чтобы понять, почему не блокируется основной поток, рассмотрим, что происходит за кулисами.
+
+Нажатие на кнопку запускает функцию приостановки performSlowTask() в качестве сопрограммы. Затем эта функция вызывает функцию Kotlin delay(), передавая значение времени. Фактически, встроенная функция Kotlin delay() сама по себе реализована как функция приостановки, поэтому также запускается как сопрограмма средой выполнения Kotlin. Выполнение кода теперь достигло так называемой точки приостановки, которая приведет к приостановке сопрограммы performSlowTask() во время выполнения сопрограммы задержки. Это освобождает поток, в котором выполнялась функция performSlowTask(), и возвращает управление основному потоку, так что пользовательский интерфейс остается незатронутым.
+
+Как только функция delay() достигнет завершения, приостановленная сопрограмма будет возобновлена и восстановлена в потоке из пула, где она сможет отобразить сообщение журнала и вернуться.
+
+При работе с сопрограммами в Android Studio точки приостановки в редакторе кода помечаются, как показано на рисунке ниже:
+*/
+
+Figure 33-1
+
+/*
+We will explore some coroutine examples when we start to look at List composables, starting with the chapter titled “An Overview of Lists and Grids in Compose”.
+
+Мы рассмотрим некоторые примеры сопрограмм, когда начнем рассматривать компонуемые элементы List, начиная с главы “Обзор списков и сеток в Compose”.
+*/
+
+
+
+33.9 Coroutine channel communication
+------------------------------------
+
+/*
+Channels provide a simple way to implement communication between coroutines including streams of data.
+In the simplest form this involves the creation of a Channel instance and calling the send() method to send the data. Once sent, transmitted data can be received in another coroutine via a call to the receive() method of the same Channel instance.
+
+The following code, for example, passes six integers from one coroutine to another:
+
+
+Каналы предоставляют простой способ реализации взаимодействия между сопрограммами, включая потоки данных.
+В простейшей форме это предполагает создание экземпляра канала и вызов метода send() для отправки данных. После отправки переданные данные могут быть получены в другой сопрограмме посредством вызова метода receive() того же экземпляра канала.
+
+Следующий код, например, передает шесть целых чисел из одной сопрограммы в другую:
+*/
+.
+.
+import kotlinx.coroutines.channels.*
+.
+.
+val channel = Channel<Int>()
+coroutineScope.launch() {
+  coroutineScope.launch(Dispatchers.Main) { performTask1() }
+  coroutineScope.launch(Dispatchers.Main) { performTask2() }
+}
+
+suspend fun performTask1() {
+  (1..6).forEach {
+    channel.send(it)
+  }
+}
+
+suspend fun performTask2() {
+  repeat(6) {
+    println("Received: ${channel.receive()}")
+  }
+}
+
+/*
+When executed, the following logcat output will be generated:
+
+При выполнении будет сгенерирован следующий вывод logcat:
+*/
+
+Received: 1
+Received: 2
+Received: 3
+Received: 4
+Received: 5
+Received: 6
+
+
+
+33.10 Understanding side effects
+--------------------------------
+
+/*
+So far in this chapter, we have looked at coroutines and explained how to use a coroutine scope to execute code asynchronously. In each case, the coroutine was launched from within the onClick event handler of a Button composable. The reason for this is that while it is possible to launch a coroutine in this way from within the scope of an event handler, it is not safe to do so from within the scope of the parent composable. Consider, for example, the following code:
+
+До сих пор в этой главе мы рассматривали сопрограммы и объясняли, как использовать область действия сопрограммы для асинхронного выполнения кода. В каждом случае сопрограмма запускалась из обработчика события onClick компонуемого элемента Button. Причина этого заключается в том, что, хотя можно запустить сопрограмму таким образом из области действия обработчика событий, небезопасно делать это из области действия родительского компонуемого объекта. Рассмотрим, например, следующий код:
+*/
+
+@Composable
+fun Greeting(name: String) {
+  val coroutineScope = rememberCoroutineScope()
+  coroutineScope.launch() {
+    performSlowTask()
+  }
+}
+
+/*
+An attempt to compile the above code will result in an error that reads as follows:
+
+Попытка скомпилировать приведенный выше код приведет к ошибке следующего вида:
+*/
+
+Calls to launch should happen inside a LaunchedEffect and not composition
+
+/*
+It is not possible to launch coroutines in this way when working within a composable because it can cause adverse side effects. In the context of Jetpack Compose, a side effect occurs when asynchronous code makes changes to the state of a composable from a different scope without taking into consideration the lifecycle of that composable. The risk here is the potential for a coroutine to continue running after the composable exits, a particular problem if the coroutine is still executing and making state changes the next time the composable runs.
+
+To avoid this problem, we need to launch our coroutines from within the body of either a LaunchedEffect or SideEffect composable. Unlike the above attempt to directly launch a coroutine from within the scope of a composable, these two composables are considered safe to launch coroutines because they are aware of the lifecycle of the parent composable.
+
+When a LaunchedEffect composable containing coroutine launch code is called, the coroutine will immediately launch and begin executing the asynchronous code. As soon as the parent composable completes, the LaunchedEffect instance and coroutine are destroyed.
+
+The syntax for declaring a LaunchedEffect containing a coroutine is as follows:
+
+
+
+Невозможно запускать сопрограммы таким образом при работе в компонуемой функции, поскольку это может вызвать неблагоприятные побочные эффекты. В контексте Jetpack Compose побочный эффект возникает, когда асинхронный код вносит изменения в состояние компонуемого объекта из другой области без учета жизненного цикла этого компонуемого объекта. Риск здесь заключается в том, что сопрограмма может продолжить выполнение после завершения работы клмпонуемой функции, что является особой проблемой, если сопрограмма все еще выполняется и вносит изменения в состояние при следующем запуске компонуемого элемента.
+
+Чтобы избежать этой проблемы, нам нужно запускать наши сопрограммы из тела либо компонуемой функции LaunchedEffect, либо SideEffect. В отличие от приведенной выше попытки прямого запуска сопрограммы из области компонуемого элемента, эти два компонуемых элемента считаются безопасными для запуска сопрограмм, поскольку они осведомлены о жизненном цикле родительского компонуемого элемента.
+
+Когда вызывается компонуемый объект LaunchedEffect, содержащий код запуска сопрограммы, сопрограмма немедленно запускается и начинает выполнять асинхронный код. Как только родительский компонуемый объект завершается, экземпляр LaunchedEffect и сопрограмма уничтожаются.
+
+Синтаксис для объявления LaunchedEffect, содержащего сопрограмму, следующий:
+*/
+
+LaunchedEffect(key1, key2, ...) {
+  coroutineScope.launch() {
+    // async code here
+  }
+}
+
+/*
+The key parameter values (of which there must be at least one) control the behavior of the coroutine through recompositions. As long as the values of any of the key parameters remain unchanged, LaunchedEffect will keep the same coroutine running through multiple recompositions of the parent composable. If a key value changes, however, LaunchedEffect will cancel the current coroutine and launch a new one.
+
+To call our suspend function from within our composable, we would need to change the code to read as follows:
+
+
+Значения ключевых параметров (из которых должно быть хотя бы одно) управляют поведением сопрограммы посредством рекомпозиций. До тех пор, пока значения любого из ключевых параметров остаются неизменными, LaunchedEffect будет поддерживать выполнение одной и той же сопрограммы при многократной рекомпоновке родительского компонуемого объекта. Однако, если значение ключа изменится, LaunchedEffect отменит текущую сопрограмму и запустит новую.
+
+Чтобы вызвать нашу функцию приостановки из нашего компонуемого объекта, нам нужно было бы изменить код следующим образом:
+*/
+
+@Composable
+fun Greeting(name: String) {
+  val coroutineScope = rememberCoroutineScope()
+  LaunchedEffect(key1 = Unit) {
+    coroutineScope.launch() {
+      performSlowTask()
+    }
+  }
+}
+
+/*
+Note that we have passed a Unit instance (the equivalent of a void value) as the key in the above example to indicate that the coroutine does not need to be recreated through recompositions.
+
+In addition to LaunchedEffect, Jetpack Compose also includes the SideEffect composable. Unlike LaunchedEffect, a SideEffect coroutine is executed after composition of the parent completes. SideEffect also does not accept key parameters and relaunches on every recomposition of the parent composable.
+
+We will be making use of LaunchedEffect in the chapter entitled “A Jetpack Compose SharedFlow Tutorial”.
+
+
+Обратите внимание, что мы передали экземпляр Unit (эквивалент значения void) в качестве ключа в приведенном выше примере, чтобы указать, что сопрограмму не нужно воссоздавать с помощью рекомпозиций.
+
+В дополнение к LaunchedEffect, Jetpack Compose также включает в себя компонуемый элемент SideEffect. В отличие от LaunchedEffect, сопрограмма SideEffect выполняется после завершения компоновки родительского объекта. SideEffect не принимает ключевые параметры и перезапускается при каждой рекомпозиции родительского компонуемого объекта.
+
+Мы будем использовать LaunchedEffect в главе “Руководство по созданию Jetpack SharedFlow”.
+*/
+
+
+
+33.11 Summary
+-------------
+
+/*
+Kotlin coroutines provide a simpler and more efficient approach to performing asynchronous tasks than that offered by traditional multi-threading. Coroutines allow asynchronous tasks to be implemented in a structured way without the need to implement the callbacks associated with typical thread-based tasks. This chapter has introduced the basic concepts of coroutines including jobs, scope, builders, suspend functions, structured concurrency, and channel-based communication. While it is possible to directly start coroutines from within an event handler such as the onClick handler of a Button, doing so within the main body of a Composable is considered unsafe and results in a syntax error. In this situation, coroutines must be launched using either the LaunchedEffect or SideEffect composable functions.
+
+Сопрограммы Kotlin обеспечивают более простой и эффективный подход к выполнению асинхронных задач, чем тот, который предлагается традиционной многопоточностью. Сопрограммы позволяют выполнять асинхронные задачи структурированным образом без необходимости реализации обратных вызовов, связанных с типичными задачами на основе потоков. В этой главе были представлены основные концепции сопрограмм, включая задания, область видимости, построители, функции приостановки, структурированный параллелизм и взаимодействие на основе каналов. Хотя можно напрямую запускать сопрограммы из обработчика событий, такого как обработчик onClick кнопки, выполнение этого в основном теле компонуемого элемента считается небезопасным и приводит к синтаксической ошибке. В этой ситуации сопрограммы должны быть запущены с использованием компонуемых функция LaunchedEffect либо SideEffect.
+*/
+
