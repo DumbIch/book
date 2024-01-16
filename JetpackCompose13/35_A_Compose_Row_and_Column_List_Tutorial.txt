@@ -1,0 +1,316 @@
+35. A Compose Row and Column List Tutorial
+==========================================
+
+/*
+In this chapter, we will create a project that uses the Column and Row components to display items in a list format. In addition to creating the list, the tutorial will also enable scrolling and demonstrate programmatic scrolling.
+
+В этой главе мы создадим проект, который использует макеты Column и Row для отображения элементов в формате списка. В дополнение к созданию списка, в руководстве также будет включена прокрутка и продемонстрирована программная прокрутка.
+*/
+
+
+
+35.1 Creating the ListDemo project
+----------------------------------
+
+/*
+Launch Android Studio and select the New Project option from the welcome screen. In the new project dialog, choose the Empty Activity template before clicking on the Next button.
+
+Enter ListDemo into the Name field and specify com.example.listdemo as the package name. Before clicking the Finish button, change the Minimum API level setting to API 26: Android 8.0 (Oreo).
+
+Within the MainActivity.kt file, delete the Greeting function and add a new empty composable named MainScreen:
+
+
+Запустите Android Studio и выберите параметр "Новый проект" на экране приветствия. В диалоговом окне "Новый проект" выберите пустой шаблон Empty Activity, прежде чем нажать кнопку "Далее".
+
+Введите ListDemo в поле "Имя" и укажите com.example.listdemo в качестве имени пакета. Прежде чем нажать кнопку Готово, измените настройку минимального уровня API на API 26: Android 8.0 (Oreo).
+
+В файле MainActivity.kt удалите функцию Greeting и добавьте новый пустой компонуемый объект с именем MainScreen:
+*/
+
+@Composable
+fun MainScreen() {
+}
+
+/*
+Next, edit the OnCreate() method and GreetingPreview function to call MainScreen instead of Greeting.
+
+Затем отредактируйте метод onCreate() и функцию GreetingPreview, чтобы вызвать MainScreen вместо Greeting.
+*/
+
+
+
+35.2 Creating a Column-based list
+---------------------------------
+
+/*
+We will start this tutorial by creating a basic list layout using the Column composable to display a scrollable list of Text component items. Start by modifying the MainActivity.kt file as follows to add and call a new composable named ColumnList:
+
+Мы начнем это руководство с создания базового макета списка, используя компонуемый элемент Column для отображения прокручиваемого списка элементов, представляющих собой компонент Text. Начните с изменения файла MainActivity.kt следующим образом, чтобы добавить и вызвать новый компонуемый элемент ColumnList:
+*/
+
+.
+.
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.unit.dp
+.
+.
+@Composable
+fun MainScreen() {
+  ColumnList()
+}
+
+@Composable
+fun ColumnList() {
+  Column {
+    repeat(500) {
+      Text(
+        "List Item $it",
+        style = MaterialTheme.typography.headlineSmall,
+        modifier = Modifier.padding(5.dp)
+      )
+    }
+  }
+}
+
+/*
+The code within the ColumnList composable creates a Column containing a list of 500 Text components. The Text component is customized using the “Heading 4” Material typographical style and a padding modifier. Each Text instance displays a string including the current item number.
+
+To best view the layout, modify the Preview composable to display the system UI:
+
+
+Код в компонуемой функции ColumnList создает макет Column, содержащий список из 500 компонентов Text. Компонент Text настраивается с использованием типографского стиля Material “Заголовок 4” и модификатора padding (отступ). Каждый экземпляр компонуемого элемента Text отображает строку, включающую текущий номер элемента.
+
+Чтобы наилучшим образом просмотреть макет, измените компоновку предварительного просмотра для отображения пользовательского интерфейса системы:
+*/
+
+@Preview(showBackground = true, showSystemUi = true)
+@Composable
+fun GreetingPreview() {
+  ListDemoTheme {
+    MainScreen()
+  }
+}
+
+/*
+Once these changes have been made, the preview should be rendered as follows:
+
+Как только эти изменения будут внесены, предварительный просмотр должен быть отображен следующим образом:
+*/
+
+Figure 35-1
+
+/*
+Start interactive mode in the Preview panel and note that it is not possible to scroll the list to view the items currently outside the bounds of the screen viewing area. To resolve this, we need to enable vertical scrolling support on the Column component.
+
+Запустите интерактивный режим на панели предварительного просмотра и обратите внимание, что невозможно прокрутить список, чтобы просмотреть элементы, которые в данный момент находятся за пределами области просмотра экрана. Чтобы решить эту проблему, нам нужно включить поддержку вертикальной прокрутки в компоненте Column.
+*/
+
+
+
+35.3 Enabling list scrolling
+----------------------------
+
+/*
+The first requirement when enabling scrolling support within a Column is a ScrollState state instance which can be obtained via a call to the rememberScrollState() function. Once the state has been obtained, it needs to be passed to the Column via the verticalScroll() modifier:
+
+Первым требованием при включении поддержки прокрутки внутри компонента Column является экземпляр состояния ScrollState, который может быть получен с помощью вызова функции rememberScrollState(). Как только состояние получено, его необходимо передать компоненту Column с помощью модификатора verticalScroll():
+*/
+.
+.
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+.
+.
+@Composable
+fun ColumnList() {
+  val scrollState = rememberScrollState()
+  Column(
+    Modifier.verticalScroll(scrollState)
+  ) {
+    repeat(500) {
+      Text(
+        "List Item $it",
+        style = MaterialTheme.typography.h4,
+        modifier = Modifier.padding(5.dp)
+      )
+    }
+  }
+}
+
+/*
+After adding scrolling support, refresh the interactive preview, then click and drag the list up and down to verify that vertical scrolling is now working.
+
+После добавления поддержки прокрутки обновите интерактивный предварительный просмотр, затем щелкните и перетащите список вверх и вниз, чтобы убедиться, что вертикальная прокрутка теперь работает.
+*/
+
+
+
+35.4 Manual scrolling
+---------------------
+
+/*
+The next step in this tutorial is to add some buttons to the layout that can be used to instantly scroll to the top and bottom of the list. As previously discussed, the list scroll position can be controlled from within code by making calls to methods of the ScrollState instance, specifying the target list position. Since these are coroutine functions, we also need to obtain a coroutine scope within which to initiate the scrolling action. We create coroutine scope instances via a call to the rememberCoroutineScope() function.
+
+Locate the ColumnList function in the MainActivity.kt file and modify it so that the list column is embedded in a new Column which also contains two Buttons arranged using a Row component:
+
+
+Следующим шагом в этом руководстве является добавление в макет нескольких кнопок, которые можно использовать для мгновенной прокрутки вверх и вниз по списку. Как обсуждалось ранее, положением прокрутки списка можно управлять из кода, вызывая методы экземпляра ScrollState, указывая целевую позицию списка. Поскольку это функции сопрограммы, нам также необходимо получить область действия сопрограммы, в пределах которой можно инициировать действие прокрутки. Мы создаем экземпляры области действия сопрограммы с помощью вызова функции rememberCoroutineScope().
+
+Найдите функцию ColumnList в файле MainActivity.kt и измените ее таким образом, чтобы список на основе макета Column был встроен в новый макет Column, который также содержит две кнопки, расположенные с использованием компонента Row:
+*/
+
+.
+.
+import androidx.compose.foundation.layout.Row
+import androidx.compose.material3.Button
+import androidx.compose.runtime.rememberCoroutineScope
+.
+.
+@Composable
+fun ColumnList() {
+  val scrollState = rememberScrollState()
+  val coroutineScope = rememberCoroutineScope()
+  
+  Column {   
+  
+    Row {
+      Button(
+        onClick = {
+        },
+        modifier = Modifier.weight(0.5f)
+          .padding(2.dp)
+      ) {
+        Text("Top")
+      }      
+      Button(
+        onClick = {
+        },
+        modifier = Modifier.weight(0.5f)
+          .padding(2.dp)
+      ) {
+        Text("End")
+      }        
+    }    
+  
+    Column(
+      Modifier.verticalScroll(scrollState)
+    ) {
+      repeat(500) {
+        Text(
+          "List Item $it",
+          style = MaterialTheme.typography.h4,
+          modifier = Modifier.padding(5.dp)
+        )
+      }
+    }
+  
+  }  
+}
+
+/*
+All that remains is to create a coroutine scope instance and then use it to perform the scrolling within the Button onClick actions:
+
+Все, что остается, это создать экземпляр области действия сопрограммы, а затем использовать его для выполнения прокрутки в рамках действий по нажатию кнопки:
+*/
+.
+.
+import kotlinx.coroutines.launch
+.
+.
+Row {
+
+  Button(
+    onClick = {
+      coroutineScope.launch {
+        scrollState.animateScrollTo(0)
+      }
+    },
+    modifier = Modifier.weight(0.5f)
+      .padding(2.dp)
+  ) {
+    Text("Top")
+  }
+  
+  Button(
+    onClick = {
+      coroutineScope.launch {
+        scrollState.animateScrollTo(scrollState.maxValue)
+      }
+    },
+    modifier = Modifier.weight(0.5f)
+      .padding(2.dp)
+  ) {
+    Text("End")
+  }
+  
+}
+
+/*
+Instead of scrolling instantly to the top and bottom of the list, we have used animated scrolling. Since the target list position is specified by pixel position, the code uses 0 as the top target. To find the end position of the list, the code accesses the maxValue property of the ScrollState instance and passes it to the animateScrollTo() function.
+
+Preview the app in interactive mode, or run it on a device or emulator and test that the two buttons scroll to the top and bottom of the list as expected. Figure 35-2, for example, shows the list after the End button has been clicked:
+
+
+Вместо мгновенной прокрутки вверх и вниз по списку мы использовали анимированную прокрутку. Поскольку целевая позиция в списке определяется положением пикселя, код использует 0 в качестве верхнего целевого значения. Чтобы найти конечную позицию списка, код обращается к свойству maxValue экземпляра ScrollState и передает его функции animateScrollTo().
+
+Просмотрите приложение в интерактивном режиме или запустите его на устройстве или эмуляторе и проверьте, что две кнопки прокручивают список в верхнюю и нижнюю части списка, как ожидалось. На рисунке 35-2, например, показан список после нажатия кнопки "End":
+*/
+
+Figure 35-2
+
+
+
+35.5 A Row list example
+-----------------------
+
+/*
+In addition to vertical Column-based lists we can, of course, also use the Row composable to create horizontal lists. To try out a horizontally scrolling Row list, add the following composable to the MainActivity.kt file and modify the MainScreen function to call it instead of ColumnList:
+
+В дополнение к вертикальным спискам на основе макета Column мы, конечно, можем также использовать компонуемый элемент Row для создания горизонтальных списков. Чтобы опробовать список строк с горизонтальной прокруткой, добавьте следующий компонуемый элемент в файл MainActivity.kt и измените функцию MainScreen, чтобы вызвать ее вместо ColumnList:
+*/
+.
+.
+import androidx.compose.foundation.horizontalScroll
+.
+.
+@Composable
+fun MainScreen() {
+  RowList()
+}
+
+@Composable
+fun RowList() {
+  val scrollState = rememberScrollState()
+  Row(
+    Modifier.horizontalScroll(scrollState)
+  ) {
+    repeat(50) {
+      Text(
+        " $it ",
+        style = MaterialTheme.typography.headlineLarge,
+        modifier = Modifier.padding(5.dp)
+      )
+    }
+  }
+}
+
+/*
+Preview the list in interactive mode and click and drag the list sideways to test horizontal scrolling as shown in Figure 35-3 below:
+
+Просмотрите список в интерактивном режиме и щелкните и перетащите список вбок, чтобы протестировать горизонтальную прокрутку, как показано на рисунке 35-3 ниже:
+*/
+
+Figure 35-3
+
+
+
+35.6 Summary
+------------
+
+/*
+In this chapter, we have used the Row and Column components to create vertical and horizontal lists. In both cases, scrolling was enabled to allow us to move through the list items using drag motions. In the case of the vertical list, buttons were added and configured to scroll directly to the top and bottom of the list when clicked. This involved launching the animateScrollTo() method of the ScrollState instance from within a coroutine scope.
+
+В этой главе мы использовали компоненты Row и Column для создания вертикальных и горизонтальных списков. В обоих случаях была включена прокрутка, позволяющая перемещаться по элементам списка с помощью перетаскивания. В случае вертикального списка были добавлены кнопки и сконфигурированы для прокрутки непосредственно к верхней и нижней части списка при нажатии. Это включало запуск метода animateScrollTo() экземпляра состояния ScrollState из области действия сопрограммы.
+*/
+
