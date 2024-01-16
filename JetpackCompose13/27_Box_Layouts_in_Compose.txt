@@ -1,0 +1,349 @@
+27. Box Layouts in Compose
+==========================
+
+/*
+Now that we have an understanding of the Compose Row and Column composables, we will move on to look at the third layout type provided by Compose in the form of the Box component. This chapter will introduce the Box layout and explore some key parameters and modifiers available when designing user interface layouts.
+
+Теперь, когда у нас есть представление о компонуемых элементах Row и Column, мы перейдем к рассмотрению третьего типа макета, предоставляемого Compose в виде компонента Box. В этой главе будет представлен макет Box и рассмотрены некоторые ключевые параметры и модификаторы, доступные при разработке макетов пользовательского интерфейса.
+*/
+
+
+
+27.1 An introduction to the Box composable
+------------------------------------------
+
+/*
+Unlike the Row and Column, which organize children in a horizontal row or vertical column, the Box layout stacks its children on top of each other. The stacking order is defined by the order in which the children are called within the Box declaration, with the first child positioned at the bottom of the stack. As with the Row and Column layouts, Box is provided with several parameters and modifiers we can use to customize the layout.
+
+В отличие от Row и Column, которые организуют дочерние элементы в горизонтальную строку или вертикальный столбец, макет Box укладывает дочерние элементы друг на друга. Порядок укладки определяется порядком, в котором дочерние элементы вызываются в объявлении компонента Box, при этом первый дочерний элемент располагается внизу стека. Как и в случае с макетами Row и Column, макет Box снабжен несколькими параметрами и модификаторами, которые мы можем использовать для настройки макета.
+*/
+
+
+
+27.2 Creating the BoxLayout project
+-----------------------------------
+
+/*
+Begin by launching Android Studio and, if necessary, closing any currently open projects using the File -> Close Project menu option so that the Welcome screen appears.
+
+Select the New Project option from the welcome screen, and when the new project dialog appears, choose the Empty Activity template before clicking on the Next button.
+
+Enter BoxLayout into the Name field and specify com.example.boxlayout as the package name. Before clicking the Finish button, change the Minimum API level setting to API 26: Android 8.0 (Oreo). On completion of the project creation process, the BoxLayout project should be listed in the Project tool window located along the left-hand edge of the Android Studio main window.
+
+Within the MainActivity.kt file, delete the Greeting function and add a new empty composable named MainScreen:
+
+
+
+Начните с запуска Android Studio и, при необходимости, закройте все открытые в данный момент проекты, используя опцию меню Файл -> Закрыть проект, чтобы появился экран приветствия.
+
+Выберите опцию Новый проект на экране приветствия, и когда появится диалоговое окно новый проект, выберите пустой шаблон Empty Activity, прежде чем нажать кнопку Далее.
+
+Введите BoxLayout в поле Имя и укажите com.example.boxlayout в качестве имени пакета. Перед нажатием кнопки Готово измените настройку минимального уровня API на API 26: Android 8.0 (Oreo). По завершении процесса создания проекта проект BoxLayout должен быть указан в окне Project tool, расположенном вдоль левого края главного окна Android Studio.
+
+В файле MainActivity.kt удалите функцию Greeting и добавьте новый пустой компонуемый объект с именем MainScreen:
+*/
+
+@Composable
+fun MainScreen() {
+}
+
+/*
+Next, change the OnCreate() method and GreetingPreview function to call MainScreen instead of Greeting.
+
+Затем измените метод onCreate() и функцию GreetingPreview, использовав вызов MainScreen вместо Greeting.
+*/
+
+
+
+27.3 Adding the TextCell composable
+-----------------------------------
+
+/*
+In this chapter, we will again use our TextCell composable, though to best demonstrate the features of the Box layout, we will modify the declaration slightly so that it can be passed an optional font size when called. Remaining within the MainActivity.kt file, add this composable function so that it reads as follows:
+
+В этой главе мы снова будем использовать наш компонуемый элемент TextCell, хотя, чтобы наилучшим образом продемонстрировать возможности макета Box, мы немного изменим объявление, для того чтобы при вызове ему можно было передать необязательный размер шрифта. Оставаясь в файле MainActivity.kt, добавьте эту компонуемую функцию так, чтобы она выглядела следующим образом:
+*/
+.
+.
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+.
+.
+@Composable
+fun TextCell(text: String, modifier: Modifier = Modifier, fontSize: Int = 150 ) {
+  val cellModifier = Modifier
+    .padding(4.dp)
+    .border(width = 5.dp, color = Color.Black)
+  Text(
+    text = text, cellModifier.then(modifier),
+    fontSize = fontSize.sp,
+    fontWeight = FontWeight.Bold,
+    textAlign = TextAlign.Center
+  )
+}
+
+
+
+27.4 Adding a Box layout
+------------------------
+
+/*
+Next, modify the MainScreen function to include a Box layout with three TextCell children:
+
+Затем измените функцию MainScreen, чтобы включить макет Box с тремя дочерними элементами TextCell:
+*/
+.
+.
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.size
+.
+.
+@Composable
+fun MainScreen() {
+  Box {
+    val height = 200.dp
+    val width = 200.dp
+    TextCell("1", Modifier.size(width = width, height = height))
+    TextCell("2", Modifier.size(width = width, height = height))
+    TextCell("3", Modifier.size(width = width, height = height))
+  }
+}
+
+/*
+After modifying the function, update the Preview panel to reflect these latest changes. Once the layout appears it should resemble Figure 27-1:
+
+После изменения функции обновите панель предварительного просмотра, чтобы отразить эти последние изменения. Как только появится макет, он должен выглядеть как рисунок 27-1:
+*/
+
+Figure 27-1
+
+/*
+The transparent nature of the Text composable allows us to see that the three children have, indeed, been stacked directly on top of each other. While this transparency is useful to show that the children have been stacked, this isn’t the behavior we are looking for in this example. To give the TextCell an opaque background, we need to call the Text composable from within a Surface component. To achieve this, edit the TextCell function so that it now reads as follows:
+
+Прозрачная природа компонуемого элемента Text позволяет нам видеть, что три дочерних элемента действительно были наложены друг на друга. Хотя эта прозрачность полезна, чтобы показать, что дочерние элементы были наложены друг на друга, это не то поведение, которое мы обычно ожидаем. Чтобы придать текстовой ячейке непрозрачный фон, нам нужно вызвать компонуемый элемент Text из компонента Surface. Для этого отредактируйте функцию TextCell таким образом, чтобы она теперь выглядела следующим образом:
+*/
+
+@Composable
+fun TextCell(text: String, modifier: Modifier = Modifier, fontSize: Int = 150 ) {
+.
+.
+  Surface {
+    Text(
+      text = text, cellModifier.then(modifier),
+      fontSize = fontSize.sp,
+      fontWeight = FontWeight.Bold,
+      textAlign = TextAlign.Center
+    )
+  }
+}
+
+/*
+When the preview is updated, only the last composable to be called by the Box will be visible because it is the uppermost child of the stack.
+
+После обновления панели предварительного просмотра мы увидим только последний компонуемый объект, вызываемый в макете Box, поскольку он является самым верхним дочерним элементом в стеке.
+*/
+
+
+
+27.5 Box alignment
+------------------
+
+/*
+The Box composable includes support for an alignment parameter to customize the positioning of the group of children within the content area of the box. The parameter is named contentAlignment and may be set to any one of the following values:
+
+Компонуемый макет Box включает поддержку параметра выравнивания для настройки позиционирования группы дочерних элементов в области содержимого блока. Параметр называется contentAlignment и может быть установлен в любое из следующих значений:
+• Alignment.TopStart
+• Alignment.TopCenter
+• Alignment.TopEnd
+• Alignment.CenterStart
+• Alignment.Center
+• Alignment.CenterEnd
+• Alignment.BottomCenter
+• Alignment.BottomEnd
+• Alignment.BottomStart
+
+
+The diagram in Figure 27-2 illustrates the positioning of the Box content for each of the above settings:
+
+Схема на рисунке 27-2 иллюстрирует расположение содержимого Box для каждой из вышеуказанных настроек:
+*/
+
+Figure 27-2
+
+/*
+To try out some of these alignments options, edit the Box declaration in the MainScreen function both to increase its size and to add a contentAlignment parameter:
+
+Чтобы опробовать некоторые из этих вариантов выравнивания, отредактируйте объявление компонента Box в функции MainScreen как для увеличения его размера, так и для добавления параметра contentAlignment:
+*/
+.
+.
+import androidx.compose.ui.Alignment
+.
+.
+@Composable
+fun MainScreen() {
+.
+.
+  Box(
+    contentAlignment = Alignment.CenterEnd,
+    modifier = Modifier.size(400.dp, 400.dp)
+  ) {
+    val height = 200.dp
+    val width = 200.dp
+    TextCell("1", Modifier.size(width = width, height = height))
+    TextCell("2", Modifier.size(width = width, height = height))
+    TextCell("3", Modifier.size(width = width, height = height))
+  }
+}
+
+/*
+Refresh the preview and verify that the Box content now appears at the CenterEnd position within the Box content area:
+
+Обновите предварительный просмотр и убедитесь, что содержимое Box теперь отображается в позициии CenterEnd внутри области содержимого компонента Box:
+*/
+
+Figure 27-3
+
+
+
+27.6 BoxScope modifiers
+-----------------------
+
+/*
+In the chapter entitled “Composing Layouts with Row and Column”, we introduced ColumnScope and RowScope and explored how these provide additional modifiers that can be applied individually to child components. In the case of the Box layout, the following BoxScope modifiers are available to be applied to child composables:
+• align() - Aligns the child within the Box content area using the specified Alignment value.
+• matchParentSize() - Sizes the child on which the modifier is applied to match the size of the parent Box.
+
+The set of Alignment values accepted by the align modifier is the same as those listed above for Box alignment.
+The following changes to the MainScreen function demonstrate the align() modifier in action:
+
+
+В главе “Создание макетов с использованием строк и столбцов” мы представили ColumnScope и RowScope и исследовали, как они предоставляют дополнительные модификаторы, которые можно применять индивидуально к дочерним компонентам. В случае макета Box доступны следующие модификаторы области BoxScope, которые можно применить к дочерним компонуемым элементам:
+• align() - Выравнивает дочерний элемент в области содержимого макета Box, используя указанное значение выравнивания.
+• matchParentSize() - изменяет размер дочернего элемента, к которому применяется модификатор, в соответствии с размером родительского элемента Box.
+
+Набор значений выравнивания, принимаемых модификатором align, совпадает с указанными выше для выравнивания элемента Box.
+Следующие изменения в функции главного экрана демонстрируют модификатор align() в действии:
+*/
+
+@Composable
+fun MainScreen() {
+.
+.
+  Box(modifier = Modifier.size(height = 90.dp, width = 290.dp)) {
+    Text("TopStart", Modifier.align(Alignment.TopStart))
+    Text("TopCenter", Modifier.align(Alignment.TopCenter))
+    Text("TopEnd", Modifier.align(Alignment.TopEnd))
+    Text("CenterStart", Modifier.align(Alignment.CenterStart))
+    Text("Center", Modifier.align(Alignment.Center))
+    Text(text = "CenterEnd", Modifier.align(Alignment.CenterEnd))
+    Text("BottomStart", Modifier.align(Alignment.BottomStart))
+    Text("BottomCenter", Modifier.align(Alignment.BottomCenter))
+    Text("BottomEnd", Modifier.align(Alignment.BottomEnd))
+  }
+}
+
+/*
+When previewed, the above Box layout will appear as shown in Figure 27-4 below:
+
+При предварительном просмотре приведенный выше макет Box будет выглядеть так, как показано на рисунке 27-4 ниже:
+*/
+
+Figure 27-4
+
+
+
+27.7 Using the clip() modifier
+------------------------------
+
+/*
+The compose clip() modifier allows composables to be rendered to conform to specific shapes. Though not specific to Box, the Box component provides perhaps the best example of clipping shapes. To define the shape of a composable, the clip() modifier is called and passed a Shape value which can be RectangleShape, CircleShape, RoundedCornerShape, or CutCornerShape.
+
+The following code, for example, draws a Box clipped to appear as a circle:
+
+
+Модификатор Compose clip() позволяет отображать компонуемые элементы в соответствии с определенными формами. Хотя он не является специфичным для компонента Box, компонент Box предоставляет, пожалуй, лучший пример обрезки фигур. Чтобы определить форму компонуемого объекта, вызывается модификатор clip() и передается значение формы, которое может быть формой RectangleShape, CircleShape, RoundedCornerShape или CutCornerShape.
+
+Следующий код, например, рисует компонет Box, обрезанный так, чтобы он выглядел как круг:
+*/
+.
+.
+import androidx.compose.foundation.background
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.shape.CircleShape
+.
+.
+Box(Modifier.size(200.dp).clip(CircleShape).background(Color.Blue))
+.
+.
+
+/*
+When rendered, the Box will appear as shown in Figure 27-5:
+
+При визуализации поле будет выглядеть так, как показано на рис. 27-5:
+*/
+
+Figure 27-5
+
+/*
+To draw a composable with rounded corners call RoundedCornerShape, passing through the radius for each corner. If a single radius value is provided, it will be applied to all four corners:
+
+Чтобы нарисовать компонуемый объект со скругленными углами, вызовите RoundedCornerShape, передав ему радиус для каждого угла. Если указано одно значение радиуса, оно будет применено ко всем четырем углам:
+*/
+.
+.
+import androidx.compose.foundation.shape.RoundedCornerShape
+.
+.
+Box(Modifier.size(200.dp).clip(RoundedCornerShape(30.dp)).background(Color.Blue))
+
+/*
+The above composable will appear as shown below:
+
+Приведенный выше компонуемый элемент будет выглядеть так, как показано ниже:
+*/
+
+Figure 27-6
+
+/*
+As an alternative to rounded corners, composables may also be rendered with cut corners. In this case, CutCornerShape is passed the cut length for the corners. Once again, we may specify different values for each corner, or all corners cut equally with a single length parameter:
+
+В качестве альтернативы закругленным углам компонуемые элементы также могут отображаться со срезанными углами. В этом случае CutCornerShape передается длина среза для углов. И снова, мы можем указать разные значения для каждого угла или все углы обрезаются одинаково с помощью одного параметра длины:
+*/
+.
+.
+import androidx.compose.foundation.shape.CutCornerShape
+.
+.
+Box(Modifier.size(200.dp).clip(CutCornerShape(30.dp)).background(Color.Blue))
+.
+.
+
+/*
+The following figure shows the Box rendered by the above code:
+
+На следующем рисунке показано поле, отображаемое приведенным выше кодом:
+*/
+
+Figure 27-7
+
+
+
+27.8 Summary
+------------
+
+/*
+The Compose Box layout positions all of its children on top of each other in a stack arrangement, with the first child positioned at the bottom of the stack. By default, this stack will be placed in the top left-hand corner of the content area, though this can be changed using the contentAlignment parameter when calling the Box composable.
+
+Direct children of a Box layout have access to additional modifiers via BoxScope. These modifiers allow individual children to be positioned independently within the Box content using a collection of nine pre-defined position settings.
+
+
+Макет Compose Box размещает все его дочерние элементы друг над другом в виде стека, причем первый дочерний элемент располагается в нижней части стека. По умолчанию этот стек будет размещен в верхнем левом углу области содержимого, хотя это можно изменить с помощью параметра ContentAlignment при вызове компонента Box.
+
+Прямые дочерние элементы макета Box имеют доступ к дополнительным модификаторам через BoxScope. Эти модификаторы позволяют размещать отдельные дочерние элементы независимо внутри содержимого Box, используя набор из девяти предопределенных настроек положения.
+*/
