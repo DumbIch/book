@@ -1,0 +1,495 @@
+34. An Overview of Lists and Grids in Compose
+=============================================
+
+/*
+It is a common requirement when designing user interface layouts to present information in either scrollable list or grid configurations. For basic list requirements, the Row and Column components can be re-purposed to provide vertical and horizontal lists of child composables. Extremely large lists, however, are likely to cause degraded performance if rendered using the standard Row and Column composables. For lists containing large numbers of items, Compose provides the LazyColumn and LazyRow composables. Similarly, grid-based layouts can be presented using the LazyVerticalGrid composable. 
+
+This chapter will introduce the basics of list and grid creation and management in Compose in preparation for the tutorials in subsequent chapters.
+
+
+Общим требованием при разработке макетов пользовательского интерфейса является представление информации либо в виде прокручиваемого списка, либо в виде сетки. Что касается базовых требований к списку, компоненты Row и Column могут быть перепрофилированы для предоставления вертикальных и горизонтальных списков дочерних компонуемых элементов. Однако чрезвычайно большие списки, вероятно, приведут к снижению производительности при отображении с использованием стандартных компонуемых элементов Row и Column. Для списков, содержащих большое количество элементов, Compose предоставляет компонуемые элементы LazyColumn и LazyRow. Аналогично, макеты на основе сетки могут быть представлены с помощью компонуемого LazyVerticalGrid. 
+
+В этой главе будут представлены основы создания списков и таблиц и управления ими в Compose в рамках подготовки к учебным пособиям в последующих главах.
+*/
+
+
+
+34.1 Standard vs. lazy lists
+----------------------------
+
+/*
+Part of the popularity of lists is that they provide an effective way to present large amounts of items in a scrollable format. Each item in a list is represented by a composable which may, itself, contain descendant composables. When a list is created using the Row or Column component, all of the items it contains are also created at initialization, regardless of how many are visible at any given time. While this does not necessarily pose a problem for smaller lists, it can be an issue for lists containing many items.
+
+Consider, for example, a list that is required to display 1000 photo images. It can be assumed with a reasonable degree of certainty that only a small percentage of items will be visible to the user at any one time. If the application was permitted to create each of the 1000 items in advance, however, the device would very quickly run into memory and performance limitations.
+
+When working with longer lists, the recommended course of action is to use LazyColumn, LazyRow, and LazyVerticalGrid. These components only create those items that are visible to the user. As the user scrolls, items that move out of the viewable area are destroyed to free up resources while those entering view are created just in time to be displayed. This allows lists of potentially infinite length to be displayed with no performance degradation.
+
+Since there are differences in approach and features when working with Row and Column compared to the lazy
+equivalents, this chapter will provide an overview of both types.
+
+
+
+Отчасти популярность списков заключается в том, что они предоставляют эффективный способ представления большого количества элементов в прокручиваемом формате. Каждый элемент в списке представлен компонуемым элементом, который сам по себе может содержать компонуемые элементы-потомки. Когда список создается с использованием компонента Row или Column, все элементы, которые он содержит, также создаются при инициализации, независимо от того, сколько из них видно в любой момент времени. Хотя это не обязательно создает проблему для списков меньшего размера, это может быть проблемой для списков, содержащих много элементов.
+
+Рассмотрим, например, список, который требуется для отображения 1000 фотоизображений. Можно с достаточной степенью уверенности предположить, что только небольшой процент элементов будет виден пользователю в любой момент времени. Однако, если бы приложению было разрешено создавать каждый из 1000 элементов заранее, устройство очень быстро столкнулось бы с ограничениями памяти и производительности.
+
+При работе с более длинными списками рекомендуется использовать LazyColumn, LazyRow и LazyVerticalGrid. Эти компоненты создают только те элементы, которые видны пользователю. По мере прокрутки пользователем элементы, которые перемещаются за пределы видимой области, уничтожаются для освобождения ресурсов, в то время как те, которые попадают в поле зрения, создаются как раз вовремя для отображения. Это позволяет отображать списки потенциально бесконечной длины без снижения производительности.
+
+Поскольку существуют различия в подходе и функциях при работе со строками и столбцами по сравнению с ленивыми
+аналогами, в этой главе будет представлен обзор обоих типов.
+*/
+
+
+
+34.2 Working with Column and Row lists
+--------------------------------------
+
+/*
+Although lacking some of the features and performance advantages of the LazyColumn and LazyRow, the Row and Column composables provide a good option for displaying shorter, basic lists of items. Lists are declared in much the same way as regular rows and columns with the exception that each list item is usually generated programmatically. The following declaration, for example, uses the Column component to create a vertical list containing 100 instances of a composable named MyListItem:
+
+Несмотря на отсутствие некоторых функций и преимуществ производительности компонентов LazyColumn и LazyRow, компонуемые элементы Row и Column предоставляют хороший вариант для отображения более коротких базовых списков элементов. Списки объявляются почти так же, как обычные строки и столбцы, за исключением того, что каждый элемент списка обычно генерируется программно. Например, в следующем объявлении компонент Column используется для создания вертикального списка, содержащего 100 экземпляров составного элемента с именем MyListItem:
+*/
+
+Column {
+  repeat(100) {
+    MyListItem()
+  }
+}
+
+/*
+Similarly, the following example creates a horizontal list containing the same items:
+
+Аналогично, в следующем примере создается горизонтальный список, содержащий те же элементы:
+*/
+
+Row {
+  repeat(100) {
+    MyListItem()
+  }
+}
+
+/*
+The MyListItem composable can be anything from a single Text composable to a complex layout containing multiple composables.
+
+Компонуемым элементом MyListItem может быть что угодно - от единичного компонуемого элемента Text до сложного макета, содержащего несколько компонуемых элементов.
+*/
+
+
+
+34.3 Creating lazy lists
+------------------------
+
+/*
+Lazy lists are created using the LazyColumn and LazyRow composables. These layouts place children within a LazyListScope block which provides additional features for managing and customizing the list items. For example, individual items may be added to a lazy list via calls to the item() function of the LazyListScope:
+
+Ленивые списки создаются с использованием компонуемых элементов LazyColumn и LazyRow. Эти макеты помещают дочерние элементы в блок LazyListScope, который предоставляет дополнительные возможности для управления элементами списка и их настройки. Например, отдельные элементы могут быть добавлены в ленивый список с помощью вызовов функции item() LazyListScope:
+*/
+
+LazyColumn {
+  item {
+    MyListItem()
+  }
+}
+
+/*
+Alternatively, multiple items may be added in a single statement by calling the items() function:
+
+В качестве альтернативы, несколько элементов могут быть добавлены единственной инструкцией путем вызова функции items():
+*/
+
+LazyColumn {
+  items(1000) { index ->
+    Text("This is item $index");
+  }
+}
+
+/*
+LazyListScope also provides the itemsIndexed() function which associates the item content with an index value, for example:
+
+LazyListScope также предоставляет функцию itemsIndexed(), которая связывает содержимое элемента со значением индекса, например:
+*/
+
+val colorNamesList = listOf("Red", "Green", "Blue", "Indigo")
+LazyColumn {
+  itemsIndexed(colorNamesList) { index, item ->
+    Text("$index = $item")
+  }
+}
+
+/*
+When rendered, the above lazy column will appear as shown in Figure 34-1 below:
+
+При отрисовке указанный выше ленивый столбец будет отображаться так, как показано на рисунке 34-1 ниже:
+*/
+
+Figure 34-1
+
+/*
+Lazy lists also support the addition of headers to groups of items in a list using the stickyHeader() function. This topic will be covered in more detail later in the chapter.
+
+Ленивые списки также поддерживают добавление заголовков к группам элементов в списке с помощью функции stickyHeader(). Эта тема будет рассмотрена более подробно позже в этой главе.
+*/
+
+
+
+34.4 Enabling scrolling with ScrollState
+----------------------------------------
+
+/*
+While the above Column and Row list examples will display a list of items, only those that fit into the viewable screen area will be accessible to the user. This is because lists are not scrollable by default. To make Row and Column-based lists scrollable, some additional steps are needed. LazyList and LazyRow, on the other hand, support scrolling by default.
+
+The first step in enabling list scrolling when working with Row and Column-based lists is to create a ScrollState instance. This is a special state object designed to allow Row and Column parents to remember the current scroll position through recompositions. A ScrollState instance is generated via a call to the rememberScrollState() function, for example:
+
+
+Хотя в приведенных выше примерах списков на основе макетов Column и Row будет отображаться список элементов, пользователю будут доступны только те, которые помещаются в видимую область экрана. Это связано с тем, что списки по умолчанию не прокручиваются. Чтобы сделать списки на основе макетов Row и Column прокручиваемыми, необходимы некоторые дополнительные шаги. Макеты LazyColumn и LazyRow, с другой стороны, поддерживают прокрутку по умолчанию.
+
+Первым шагом для включения прокрутки списка при работе со списками на основе макетов Row и Column является создание экземпляра ScrollState. Это специальный объект состояния, предназначенный для того, чтобы родительские элементы Row и Column могли запоминать текущее положение прокрутки при рекомпозиции. Экземпляр ScrollState генерируется с помощью вызова функции rememberScrollState(), например:
+*/
+
+val scrollState = rememberScrollState()
+
+/*
+Once created, the scroll state is passed as a parameter to the Column or Row composable using the verticalScroll() and horizontalScroll() modifiers. In the following example, vertical scrolling is being enabled in a Column list:
+
+После создания состояние прокрутки передается в качестве параметра компонуемому элементу Column или Row с использованием модификаторов verticalScroll() и horizontalScroll(). В следующем примере вертикальная прокрутка включена в списке на основе макета Column:
+*/
+
+Column(Modifier.verticalScroll(scrollState)) {
+  repeat(100) {
+    MyListItem()
+  }
+}
+
+/*
+Similarly, the following code enables horizontal scrolling on a Row list:
+
+Аналогично, следующий код включает горизонтальную прокрутку в списке на основе макета Row:
+*/
+
+Row(Modifier.horizontalScroll(scrollState)) {
+  repeat(1000) {
+    MyListItem()
+  }
+}
+
+
+
+34.5 Programmatic scrolling
+---------------------------
+
+/*
+We generally think of scrolling as being something a user performs through dragging or swiping gestures on the device screen. It is also important to know how to change the current scroll position from within code. An app screen might, for example, contain buttons which can be tapped to scroll to the start and end of a list. The steps to implement this behavior differ between Row and Columns lists and the lazy list equivalents.
+
+When working with Row and Column lists, programmatic scrolling can be performed by calling the following functions on the ScrollState instance:
+• animateScrollTo(value: Int) - Scrolls smoothly to the specified pixel position in the list using animation.
+• scrollTo(value: Int) - Scrolls instantly to the specified pixel position.
+
+Note that the value parameters in the above function represent the list position in pixels instead of referencing a specific item number. It is safe to assume that the start of the list is represented by pixel position 0, but the pixel position representing the end of the list may be less obvious. Fortunately, the maximum scroll position can be identified by accessing the maxValue property of the scroll state instance:
+
+
+Обычно мы думаем о прокрутке как о чем-то, что пользователь выполняет с помощью жестов перетаскивания или пролистывания по экрану устройства. Также важно знать, как изменить текущее положение прокрутки из кода. Экран приложения может, например, содержать кнопки, которые можно нажимать для прокрутки до начала и конца списка. Шаги по реализации этого поведения различаются в списках на основе макетов Row и Column от их "ленивых" эквивалентов.
+
+При работе со списками на основе макетов Row и Column программная прокрутка может быть выполнена путем вызова следующих функций в экземпляре ScrollState:
+• animateScrollTo(value: Int) - плавная прокрутка до указанной позиции пикселя в списке с помощью анимации.
+• scrollTo(value: Int) - мгновенная прокрутка до указанной позиции пикселя.
+
+Обратите внимание, что параметры value в приведенной выше функции представляют позицию списка в пикселях вместо ссылки на конкретный номер элемента. Можно с уверенностью предположить, что начало списка представлено позицией пикселя 0, но позиция пикселя, представляющая конец списка, может быть менее очевидной. К счастью, максимальное положение прокрутки можно определить, обратившись к свойству maxValue экземпляра ScrollState:
+*/
+
+val maxScrollPosition = scrollState.maxValue
+
+/*
+To programmatically scroll LazyColumn and LazyRow lists, functions need to be called on a LazyListState instance which can be obtained via a call to the rememberLazyListState() function as follows:
+
+Чтобы программно прокручивать элементы в списках на основе макетов LazyRow и LazyColumn, необходимо вызывать функции в экземпляре LazyListState, который можно получить с помощью вызова функции rememberLazyListState() следующим образом:
+*/
+
+val listState = rememberLazyListState()
+
+/*
+Once the list state has been obtained, it must be applied to the LazyRow or LazyColumn declaration as follows:
+
+Как только состояние списка получено, оно должно быть применено к объявлению LazyRow или LazyColumn следующим образом:
+*/
+.
+.
+LazyColumn(
+  state = listState,
+  {
+.
+.
+
+/*
+Scrolling can then be performed via calls to the following functions on the list state instance:
+• animateScrollToItem(index: Int) - Scrolls smoothly to the specified list item (where 0 is the first item).
+• scrollToItem(index: Int) - Scrolls instantly to the specified list item (where 0 is the first item).
+
+In this case, the scrolling position is referenced by the index of the item instead of pixel position.
+
+One complication is that all four of the above scroll functions are coroutine functions. As outlined in the chapter titled “Coroutines and LaunchedEffects in Jetpack Compose”, coroutines are a feature of Kotlin that allows blocks of code to execute asynchronously without blocking the thread from which they are launched (in this case the main thread which is responsible for making sure the app remains responsive to the user). Coroutines can be implemented without having to worry about building complex implementations or directly managing multiple threads. Because of the way they are implemented, coroutines are much more efficient and less resource-intensive than using traditional multi-threading options. One of the key requirements of coroutine functions is that they must be launched from within a coroutine scope.
+
+As with ScrollState and LazyListState, we need access to a CoroutineScope instance that will be remembered through recompositions. This requires a call to the rememberCoroutineScope() function as follows:
+
+
+Затем прокрутка может быть выполнена с помощью вызовов следующих функций экземпляра состояния списка:
+• animateScrollToItem(index: Int) - плавная прокрутка до указанного элемента списка (где 0 - первый элемент).
+• scrollToItem(index: Int) - мгновенно прокручивается к указанному элементу списка (где 0 - первый элемент).
+
+В этом случае на позицию прокрутки ссылается индекс элемента, а не позиция в пикселях.
+
+Одна из сложностей заключается в том, что все четыре из вышеперечисленных функций прокрутки являются функциями сопрограммы. Как описано в главе под названием “Сопрограммы и запускаемые эффекты в Jetpack Compose”, сопрограммы - это функция Kotlin, которая позволяет блокам кода выполняться асинхронно, не блокируя поток, из которого они запускаются (в данном случае основной поток, который отвечает за то, чтобы приложение оставалось отзывчивым к пользователю). Сопрограммы могут быть реализованы без необходимости беспокоиться о создании сложных реализаций или непосредственном управлении несколькими потоками. Благодаря способу реализации сопрограммы намного эффективнее и менее ресурсоемки, чем при использовании традиционных многопоточных опций. Одним из ключевых требований к функциям сопрограммы является то, что они должны запускаться из области действия сопрограммы.
+
+Как и в случае ScrollState и LazyListState, нам нужен доступ к экземпляру CoroutineScope, который будет запоминаться при рекомпоновке. Для этого требуется вызвать функцию rememberCoroutineScope() следующим образом:
+*/
+
+val coroutineScope = rememberCoroutineScope()
+
+/*
+Once we have a coroutine scope, we can use it to launch the scroll functions. The following code, for example, declares a Button component configured to launch the animateScrollTo() function within the coroutine scope. In this case, the button will cause the list to scroll to the end position when clicked
+
+Как только у нас появится область действия сопрограммы, мы сможем использовать ее для запуска функций прокрутки. Следующий код, например, объявляет компонент кнопки, сконфигурированный для запуска функции animateScrollTo() в области действия сопрограммы. В этом случае нажатие кнопки приведет к прокрутке списка до конечной позиции:
+*/
+.
+.
+Button(onClick = {
+  coroutineScope.launch {
+    scrollState.animateScrollTo(scrollState.maxValue)
+  }
+.
+.
+}
+
+
+
+34.6 Sticky headers
+-------------------
+
+/*
+Sticky headers is a feature only available within lazy lists that allows list items to be grouped under a corresponding header. Sticky headers are created using the LazyListScope stickyHeader() function.
+
+The headers are referred to as being sticky because they remain visible on the screen while the current group is scrolling. Once a group scrolls from view, the header for the next group takes its place. Figure 34-2, for example, shows a list with sticky headers. Note that although the Apple group is scrolled partially out of view, the header remains in position at the top of the screen:
+
+
+Липкие заголовки - это функция, доступная только в ленивых списках, которая позволяет группировать элементы списка под соответствующим заголовком. Липкие заголовки создаются с помощью функции stickyHeader() области видимости LazyListScope.
+
+Заголовки называются "липкими", потому что они остаются видимыми на экране во время прокрутки текущей группы. Как только группа исчезает из поля зрения, ее место занимает заголовок для следующей группы. На рисунке 34-2, например, показан список с липкими заголовками. Обратите внимание, что, хотя группа Apple прокручивается частично вне поля зрения, заголовок остается на своем месте в верхней части экрана:
+*/
+
+Figure 34-2
+
+/*
+When working with sticky headers, the list content must be stored in an Array or List which has been mapped using the Kotlin groupBy() function. The groupBy() function accepts a lambda which is used to define the selector which defines how data is to be grouped. This selector then serves as the key to access the elements of each group. Consider, for example, the following list which contains mobile phone models:
+
+При работе с липкими заголовками содержимое списка должно храниться в массиве или списке, который был сопоставлен с помощью функции Kotlin groupBy(). Функция groupBy() принимает лямбда-выражение, которое используется для назначения селектора, определяющего, как данные должны быть сгруппированы. Этот селектор затем служит ключом для доступа к элементам каждой группы. Рассмотрим, например, следующий список, содержащий модели мобильных телефонов:
+*/
+
+val phones = listOf("Apple iPhone 12", "Google Pixel 4", "Google Pixel 6",
+"Samsung Galaxy 6s", "Apple iPhone 7", "OnePlus 7", "OnePlus 9 Pro",
+"Apple iPhone 13", "Samsung Galaxy Z Flip", "Google Pixel 4a",
+"Apple iPhone 8")
+
+/*
+Now suppose that we want to group the phone models by manufacturer. To do this we would use the first word of each string (in other words, the text before the first space character) as the selector when calling groupBy() to map the list:
+
+Теперь предположим, что мы хотим сгруппировать модели телефонов по производителям. Для этого мы бы использовали первое слово каждой строки (другими словами, текст перед первым символом пробела) в качестве селектора при вызове groupBy() для сопоставления списка:
+*/
+
+val groupedPhones = phones.groupBy { it.substringBefore(' ') }
+
+/*
+Once the phones have been grouped by manufacturer, we can use the forEach statement to create a sticky header for each manufacture name, and display the phones in the corresponding group as list items:
+
+Как только телефоны будут сгруппированы по производителям, мы можем использовать инструкцию forEach для создания липкого заголовка для каждого названия производителя и отображения телефонов в соответствующей группе в виде элементов списка:
+*/
+
+groupedPhones.forEach { (manufacturer, models) ->
+  stickyHeader {
+    Text(
+      text = manufacturer,
+      color = Color.White,
+      modifier = Modifier
+        .background(Color.Gray)
+        .padding(5.dp)
+        .fillMaxWidth()
+    )
+  }
+  items(models) { model ->
+    MyListItem(model)
+  }
+}
+
+/*
+In the above forEach lambda, manufacturer represents the selector key (for example “Apple”) and models an array containing the items in the corresponding manufacturer group (“Apple iPhone 12”, “Apple iPhone 7”, and so on for the Apple selector):
+
+В приведенной выше лямбде forEach производитель представляет ключ селектора (например, “Apple”) и моделирует массив, содержащий элементы в соответствующей группе производителей (“Apple iPhone 12”, “Apple iPhone 7” и т.д. для ключа "Apple").:
+*/
+
+groupedPhones.forEach { (manufacturer, models) ->
+
+/*
+The selector key is then used as the text for the sticky header, and the models list is passed to the items() function to display all the group elements, in this case using a custom composable named MyListItem for each item:
+
+Затем ключ селектора используется в качестве текста для липкого заголовка, а список моделей передается функции items() для отображения всех элементов группы, в данном случае с использованием пользовательского компонуемого элемента с именем MyListItem для каждого элемента:
+*/
+
+items(models) { model ->
+  MyListItem(model)
+}
+
+/*
+When rendered, the above code will display the list shown in Figure 34-2 above.
+
+При отрисовке приведенный выше код отобразит список, показанный на рисунке 34-2 выше.
+*/
+
+
+
+34.7 Responding to scroll position
+----------------------------------
+
+/*
+Both LazyRow and LazyColumn allow actions to be performed when a list scrolls to a specified item position. This can be particularly useful for displaying a “scroll to top” button that appears only when the user scrolls towards the end of the list.
+
+The behavior is implemented by accessing the firstVisibleItemIndex property of the LazyListState instance which contains the index of the item that is currently the first visible item in the list. For example, if the user scrolls a LazyColumn list such that the third item in the list is currently the topmost visible item, firstVisibleItemIndex will contain a value of 2 (since indexes start counting at 0). The following code, for example, could be used to display a “scroll to top” button when the first visible item index exceeds 8:
+
+
+Как макет LazyRow, так и LazyColumn позволяют выполнять действия, когда список прокручивается до указанной позиции элемента. Это может быть особенно полезно для отображения кнопки “прокрутить вверх”, которая появляется только тогда, когда пользователь прокручивает список до конца.
+
+Поведение реализуется путем обращения к свойству firstVisibleItemIndex экземпляра LazyListState, содержащему индекс элемента, который в данный момент является первым видимым элементом в списке. Например, если пользователь прокручивает список LazyColumn таким образом, что третий элемент в списке в данный момент является самым верхним видимым элементом, firstVisibleItemIndex будет содержать значение 2 (поскольку индексы начинают отсчет с 0). Следующий код, например, можно было бы использовать для отображения кнопки “прокрутить вверх”, когда индекс первого видимого элемента превышает 8:
+*/
+
+val firstVisible = listState.firstVisibleItemIndex
+if (firstVisible > 8) {
+  // Display scroll to top button
+}
+
+
+
+34.8 Creating a lazy grid
+-------------------------
+
+/*
+Grid layouts may be created using the LazyVerticalGrid composable. The appearance of the grid is controlled by the cells parameter that can be set to either adaptive or fixed mode. In adaptive mode, the grid will calculate the number of rows and columns that will fit into the available space, with even spacing between items and subject to a minimum specified cell size. Fixed mode, on the other hand, is passed the number of rows to be displayed and sizes each column width equally to fill the width of the available space.
+
+The following code, for example, declares a grid containing 30 cells, each with a minimum width of 60dp:
+
+
+Макеты сетки могут быть созданы с использованием компонуемой функции LazyVerticalGrid. Внешний вид сетки контролируется параметром cells, который может быть установлен либо в адаптивный, либо в фиксированный режим. В адаптивном режиме сетка рассчитает количество строк и столбцов, которые поместятся в доступном пространстве, с равномерным расстоянием между элементами и при соблюдении минимального заданного размера ячейки. С другой стороны, в фиксированном режиме передается количество отображаемых строк и одинаковый размер ширины каждого столбца, чтобы заполнить ширину доступного пространства.
+
+Следующий код, например, объявляет сетку, содержащую 30 ячеек, каждая из которых имеет минимальную ширину 60 dp:
+*/
+
+LazyVerticalGrid(
+  GridCells.Adaptive(minSize = 60.dp),
+  state = rememberLazyGridState()
+  contentPadding = PaddingValues(10.dp)
+) {
+  items(30) { index ->
+    Card(
+      colors = CardDefaults.cardColors(
+        containerColor = MaterialTheme.colorScheme.primary
+      ),
+      modifier = Modifier
+        .padding(5.dp)
+        .fillMaxSize()
+    ) {
+      Text(
+        "$index",
+        textAlign = TextAlign.Center,
+        fontSize = 30.sp,
+        color = Color.White,
+        modifier = Modifier.width(120.dp)
+      )
+    }
+  }
+}
+
+/*
+When called, the LazyVerticalGrid composable will fit as many items as possible into each row without making the column width smaller than 60dp as illustrated in the figure below:
+
+При вызове компонуемая функция LazyVerticalGrid поместит как можно больше элементов в каждую строку, не делая ширину столбца меньше 60 точек на дюйм, как показано на рисунке ниже:
+*/
+
+Figure 34-3
+
+/*
+The following code organizes items in a grid containing three columns:
+
+Следующий код упорядочивает элементы в таблице, содержащей три столбца:
+*/
+
+LazyVerticalGrid(
+  GridCells.Fixed(3),
+  state = rememberLazyGridState(),
+  contentPadding = PaddingValues(10.dp)
+) {
+  items(15) { index ->
+    Card(
+      colors = CardDefaults.cardColors(
+        containerColor = MaterialTheme.colorScheme.primary
+      ),
+      modifier = Modifier
+        .padding(5.dp)
+        .fillMaxSize()
+    ) {
+      Text(
+        "$index",
+        fontSize = 35.sp,
+        color = Color.White,
+        textAlign = TextAlign.Center,
+        modifier = Modifier.width(120.dp)
+      )
+    }
+  }
+}
+
+/*
+The layout from the above code will appear as illustrated in Figure 34-4 below:
+
+Макет из приведенного выше кода будет выглядеть так, как показано на рисунке 34-4 ниже:
+*/
+
+Figure 34-4
+
+/*
+Both the above grid examples used a Card composable containing a Text component for each cell item. The Card component provides a surface into which to group content and actions relating to a single content topic and is often used as the basis for list items. Although we provided a Text composable as the child, the content in a card can be any composable, including containers such as Row, Column, and Box layouts. A key feature of Card is the ability to create a shadow effect by specifying an elevation:
+
+В обоих приведенных выше примерах сетки использовался компонуемый элемент Card, содержащий компонент Text для ячейки каждого элемента. Компонент Card предоставляет поверхность, на которой можно группировать контент и действия, относящиеся к одной теме контента, и часто используется в качестве основы для элементов списка. Хотя мы предоставили компонуемый элемент Text, который можно компоновать в качестве дочернего элемента, содержимое карточки может быть любым компонуемым элементом, включая контейнеры, такие как макеты Row, Column и Box. Ключевой особенностью карточки является возможность создания эффекта тени путем указания высоты:
+*/
+
+Card(
+  modifier = Modifier
+    .fillMaxWidth()
+    .padding(15.dp),
+  elevation = CardDefaults.cardElevation(
+    defaultElevation = 10.dp
+  )
+) {
+  Column(
+    horizontalAlignment = Alignment.CenterHorizontally,
+    modifier = Modifier.padding(15.dp).fillMaxWidth()
+  ) {
+    Text("Jetpack Compose", fontSize = 30.sp, )
+    Text("Card Example", fontSize = 20.sp)
+  }
+}
+
+/*
+When rendered, the above Card component will appear as shown in Figure 34-5:
+
+При визуализации вышеуказанный компонент карты будет выглядеть так, как показано на рисунке 34-5:
+*/
+
+Figure 34-5
+
+
+
+34.9 Summary
+------------
+
+/*
+Lists in Compose may be created using either standard or lazy list components. The lazy components have the advantage that they can present large amounts of content without impacting the performance of the app or the device on which it is running. This is achieved by creating list items only when they become visible and destroying them as they scroll out of view. Lists can be presented in row, column, and grid formats and can be static or scrollable. It is also possible to programmatically scroll lists to specific positions and to trigger events based on the current scroll position.
+
+Списки в Compose могут создаваться с использованием стандартных или ленивых компонентов списков. Преимущество ленивых компонентов в том, что они могут отображать большие объемы контента, не влияя на производительность приложения или устройства, на котором оно запущено. Это достигается путем создания элементов списка только тогда, когда они становятся видимыми, и уничтожения их по мере того, как они прокручиваются вне поля зрения. Списки могут быть представлены в форматах строк, столбцов и сетки и могут быть статичными или прокручиваемыми. Также возможно программно прокручивать списки до определенных позиций и запускать события на основе текущей позиции прокрутки.
+*/
+
