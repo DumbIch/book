@@ -1,0 +1,477 @@
+43. A Compose ViewModel Tutorial
+================================
+
+/*
+As outlined in the previous chapter, we use ViewModels to separate an activity’s data and associated logic from the code responsible for rendering the user interface. Having covered the theory of modern Android app architecture, this chapter will create an example project demonstrating the use of a ViewModel within an example project.
+
+Как описано в предыдущей главе, мы используем ViewModels (модели представления) для отделения данных активити и связанной с ними логики от кода, ответственного за визуализацию пользовательского интерфейса. Для иллюстрации теории архитектуры современных приложений Android, в этой главе будет создан пример проекта, демонстрирующий использование ViewModel.
+*/
+
+
+
+43.1 About the project
+----------------------
+
+/*
+The project created in this chapter involves a simple app designed to perform temperature conversions between Celsius and Fahrenheit. Once the app is complete, it will appear as illustrated in Figure 43-1 below:
+
+Проект, созданный в этой главе, включает в себя простое приложение, предназначенное для преобразования температуры между градусами Цельсия и Фаренгейта. Как только приложение будет готово, оно будет выглядеть так, как показано на рисунке 43-1 ниже:
+*/
+
+Figure 43-1
+
+/*
+When a temperature value is entered into the OutlinedTextField, and the button is clicked, the converted value will appear in a result Text component. In addition, the Switch component indicates whether the entered temperature is Fahrenheit or Celsius. The current switch setting, conversion result, and conversion logic will all be contained within a ViewModel.
+
+Когда значение температуры введено в текстовое поле OutlinedTextField и нажата кнопка, преобразованное значение появится в компоненте результата Text. Кроме того, компонент переключателя Switch указывает, является ли введенная температура градусами Фаренгейта или Цельсия. Текущая настройка переключателя, результат преобразования и логика преобразования - все это будет содержаться в ViewModel.
+*/
+
+
+
+43.2 Creating the ViewModelDemo project
+---------------------------------------
+
+/*
+Launch Android Studio and create a new Empty Activity project named ViewModelDemo, specifying com.example.viewmodeldemo as the package name and selecting a minimum API level of API 26: Android 8.0 (Oreo). Within the MainActivity.kt file, delete the Greeting function and add a new empty composable named ScreenSetup, which, in turn, calls a function named MainScreen:
+
+Запустите Android Studio и создайте новый пустой проект Empty Activity с именем ViewModelDemo, указав com.example.viewmodeldemo в качестве имени пакета и выбрав минимальный уровень API API 26: Android 8.0 (Oreo). В файле MainActivity.kt удалите функцию Greeting и добавьте новый пустой компонуемый объект с именем ScreenSetup, который, в свою очередь, вызывает функцию с именем MainScreen:
+*/
+
+@Composable
+fun ScreenSetup() {
+  MainScreen()
+}
+
+@Composable
+fun MainScreen() {
+}
+
+/*
+Edit the OnCreate() method function to call ScreenSetup instead of Greeting (we will modify the GreetingPreview composable later).
+
+Next, modify the build.gradle (Module: app) file to add the Compose view model library to the dependencies section and click the Sync Now link to commit the change:
+
+
+Отредактируйте метод onCreate(), чтобы вызвать ScreenSetup вместо Greeting (мы изменим компонуемую функцию GreetingPreview позже).
+
+Затем измените файл build.gradle (модуль: app), чтобы добавить библиотеку компонуемых моделей представления в раздел зависимостей, и нажмите ссылку Синхронизировать сейчас, чтобы зафиксировать изменение:
+*/
+.
+.
+dependencies {
+.
+.
+implementation 'androidx.lifecycle:lifecycle-viewmodel-compose:2.5.1'
+.
+.
+
+
+
+43.3 Adding the ViewModel
+-------------------------
+
+/*
+Within the Android Studio Project tool window, locate and right-click on the app -> java -> com.example.viewmodeldemo entry and select the New -> Kotlin Class/File menu option. In the resulting dialog, name the class DemoViewModel before tapping the keyboard Enter key.
+
+The ViewModel needs to contain state values in which to store the conversion result and current switch position as follows:
+
+
+В окне инструментов проекта Android Studio найдите и щелкните правой кнопкой мыши запись app -> java -> com.example.viewmodeldemo и выберите пункт меню New -> Kotlin Class/File. В появившемся диалоговом окне назовите класс DemoViewModel, прежде чем нажать клавишу ввода на клавиатуре.
+
+ViewModel должен содержать значения состояния, в которых можно сохранить результат преобразования и текущее положение переключателя следующим образом:
+*/
+
+package com.example.viewmodeldemo
+
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.lifecycle.ViewModel
+
+class DemoViewModel : ViewModel() {
+
+  var isFahrenheit by mutableStateOf(true)
+  var result by mutableStateOf("")
+
+}
+
+/*
+The class also needs to contain the logic for the model, starting with a function to perform the temperature unit conversion. Since the user enters the temperature into a text field it is passed to the function as a String. In addition to performing the calculation, code is also needed to convert between string and integer types. This code must also ensure that the user has entered a valid number. Remaining in the DemoViewModel.kt file, add a new function named convertTemp() so that it reads as follows:
+
+Класс также должен содержать логику для модели, начиная с функции для выполнения преобразования единиц измерения температуры. Поскольку пользователь вводит температуру в текстовое поле, она передается функции в виде строки. В дополнение к выполнению вычисления также необходим код для преобразования между строковым и целочисленным типами. Этот код также должен гарантировать, что пользователь ввел допустимое число. Оставаясь в файле DemoViewModel.kt, добавьте новую функцию с именем convertTemp(), чтобы она выглядела следующим образом:
+*/
+.
+.
+import java.lang.Exception
+import kotlin.math.roundToInt
+
+
+class DemoViewModel : ViewModel() {
+.
+.
+  fun convertTemp(temp: String) {
+    result = try {
+      val tempInt = temp.toInt()
+      if (isFahrenheit) {
+        ((tempInt - 32) * 0.5556).roundToInt().toString()
+      } else {
+        ((tempInt * 1.8) + 32).roundToInt().toString()
+      }
+    } catch (e: Exception) {
+      "Invalid Entry"
+    }
+  }
+.
+.
+/*
+The above function begins by converting the temperature string value to an integer. This is performed within the context of a try... catch statement, which reports invalid input if the text does not equate to a valid number. Next, the appropriate conversion is performed depending on the current isFahrenheit setting, and the result is rounded to a whole number and converted back to a string before being assigned to the result state variable.
+
+The other function that needs to be added to the view model will be called when the switch setting changes and inverts the current isFahrenheit state setting:
+
+
+Описанная выше функция начинается с преобразования строкового значения температуры в целое число. Код выполняется в контексте инструкции try... catch, которая сообщает о недопустимом вводе, если текст не соответствует допустимому числу. Затем выполняется соответствующее преобразование в зависимости от текущего значения по Фаренгейту, и результат округляется до целого числа и преобразуется обратно в строку перед присвоением переменной состояния результата.
+
+Другая функция, которую необходимо добавить в модель представления, будет вызвана при изменении настройки переключателя и инвертировании текущей настройки состояния isFahrenheit:
+*/
+
+fun switchChange() {
+  isFahrenheit = !isFahrenheit
+}
+
+/*
+The implementation of the view model is now complete and is ready to be used from within the main activity.
+
+Реализация модели представления теперь завершена и готова к использованию в рамках основной активити.
+*/
+
+
+
+43.4 Accessing DemoViewModel from MainActivity
+----------------------------------------------
+
+/*
+Now that we have declared a view model class, the next step is to create an instance and integrate it with the composables that make up our MainActivity. This project will involve creating a DemoViewModel instance as a parameter to the ScreenSetup function and then passing through the state variables and function references to the MainScreen function. First, open the MainActivity.kt file in the code editor and make the following changes:
+
+Теперь, когда мы объявили класс модели представления, следующим шагом является создание экземпляра и интеграция его с компонуемыми элементами, составляющими нашу MainActivity. Этот проект будет включать создание экземпляра DemoViewModel в качестве параметра функции ScreenSetup, а затем передачу переменных состояния и ссылок на функции в функцию MainScreen. Сначала откройте файл MainActivity.kt в редакторе кода и внесите следующие изменения:
+*/
+.
+.
+import androidx.lifecycle.viewmodel.compose.viewModel
+.
+.
+@Composable
+fun ScreenSetup(viewModel: DemoViewModel = viewModel()) {
+  MainScreen(
+    isFahrenheit = viewModel.isFahrenheit,
+    result = viewModel.result,
+    convertTemp = { viewModel.convertTemp(it) },
+    switchChange = { viewModel.switchChange() }
+  )
+}
+
+@Composable
+fun MainScreen(
+  isFahrenheit: Boolean,
+  result: String,
+  convertTemp: (String) -> Unit,
+  switchChange: () -> Unit
+) {
+}
+.
+.
+/*
+Before starting work on the user interface design, the GreetingPreview function also needs to be modified to make use of the view model:
+
+Перед началом работы над дизайном пользовательского интерфейса функцию GreetingPreview также необходимо изменить, чтобы использовать модель представления:
+*/
+
+@Preview(showBackground = true, showSystemUi = true)
+@Composable
+fun GreetingPreview(model: DemoViewModel = viewModel()) {
+  ViewModelDemoTheme {
+    MainScreen(
+      isFahrenheit = model.isFahrenheit,
+      result = model.result,
+      convertTemp = { model.convertTemp(it) },
+      switchChange = { model.switchChange() }
+    )
+  }
+}
+
+
+
+43.5 Designing the temperature input composable
+-----------------------------------------------
+
+/*
+A closer look at the completed user interface screenshot shown in Figure 43-1 above will reveal the presence of a snowflake icon on the right-hand side of the OutlinedTextField component. Before writing any more code, we need to add this icon to the project. Within Android Studio, select the Tools -> Resource Manager menu option to display the Resource Manager tool window. Within the tool window click on the `+` button indicated by the arrow in Figure 43-2 and select the Vector Asset menu option to add a new resource to the project:
+
+Более пристальный взгляд на завершенный скриншот пользовательского интерфейса, показанный на рисунке 43-1 выше, покажет наличие иконки снежинки в правой части компонента OutlinedTextField. Прежде чем писать какой-либо другой код, нам нужно добавить эту иконку в проект. В Android Studio выберите пункт меню Сервис -> Диспетчер ресурсов, чтобы отобразить окно инструмента диспетчер ресурсов. В окне инструмента нажмите на кнопку "+", обозначенную стрелкой на рисунке 43-2, и выберите пункт меню векторных ресурсов, чтобы добавить новый ресурс в проект:
+*/
+
+Figure 43-2
+
+/*
+In the resulting dialog, click on the Clip Art box as shown in Figure 43-3 below:
+
+В появившемся диалоговом окне щелкните на поле Clip Art, как показано на рисунке 43-3 ниже:
+*/
+
+Figure 43-3
+
+/*
+When the icon selection dialog appears, enter “ac unit” into the search field to locate the clip art icon to be used in the project:
+
+Когда появится диалоговое окно выбора иконки, введите “ac unit” в поле поиска, чтобы найти иконку, которая будет использоваться в проекте:
+*/
+
+Figure 43-4
+
+/*
+Select the icon and click on the OK button to return to the vector asset configuration dialog, where the selected icon will now appear. Click Next followed by Finish to complete the addition of the icon to the project resources.
+
+Выберите иконку и нажмите кнопку OK, чтобы вернуться в диалоговое окно настройки векторных ресурсов, где теперь появится выбранная иконка. Нажмите Далее, а затем Готово, чтобы завершить добавление иконки к ресурсам проекта.
+*/
+
+
+43.6 Designing the temperature input composable
+-----------------------------------------------
+
+/*
+In the interests of avoiding the MainScreen function becoming cluttered, the Switch, OutlinedTextField, and unit indicator Text component will be placed in a separate composable named InputRow, which can now be added to the MainActivity.kt file:
+
+Чтобы избежать загромождения функции MainScreen, компоненты Switch, OutlinedTextField и текстовый компонент индикатора единиц измерения температуры Text будут помещены в отдельную компонуемую функцию с именем InputRow, которую теперь можно добавить в файл MainActivity.kt:
+*/
+.
+.
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+.
+.
+@Composable
+fun InputRow(
+  isFahrenheit: Boolean,
+  textState: String,
+  switchChange: () -> Unit,
+  onTextChange: (String) -> Unit
+) {
+  Row(verticalAlignment = Alignment.CenterVertically) {
+    Switch(
+      checked = isFahrenheit,
+      onCheckedChange = { switchChange() }
+    )
+    OutlinedTextField(
+      value = textState,
+      onValueChange = { onTextChange(it) },
+      keyboardOptions = KeyboardOptions(
+      keyboardType = KeyboardType.Number
+    ),
+    singleLine = true,
+    label = { Text("Enter temperature")},
+    modifier = Modifier.padding(10.dp),
+    textStyle = TextStyle(fontWeight = FontWeight.Bold,
+      fontSize = 30.sp),
+      trailingIcon = {
+        Icon(
+          painter = painterResource(R.drawable.baseline_ac_unit_24),
+          contentDescription = "frost",
+          modifier = Modifier
+            .size(40.dp)
+        )
+      }
+    )
+  
+    Crossfade(
+      targetState = isFahrenheit,
+      animationSpec = tween(2000)
+    ) { visible ->
+      when (visible) {
+        true -> Text("\u2109", style = MaterialTheme.typography.headlineSmall)
+        false -> Text("\u2103", style = MaterialTheme.typography.headlineSmall)
+      }
+    }
+  }
+}
+
+/*
+If the editor reports that OutlinedTextField is experimental, add the following OptIn declaration to the function:
+
+Если редактор сообщает, что текстовое поле OutlinedTextField является экспериментальным, добавьте в функцию следующее объявление параметра:
+*/
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun InputRow(
+  isFahrenheit: Boolean,
+  textState: String,
+
+/*
+The InputRow function expects as parameters the state values and functions contained within the view model together with a textState state variable and onTextChange event handler. These last two parameters are used to display the text typed by the user into the text field and will be “hoisted” to the MainScreen function later in the chapter. The current textState value is also what gets passed to the convertTemp() function when the user clicks the button.
+
+The composables that make up this section of the layout are contained within a Row that is configured to center its children vertically. The first child, the Switch component, simply calls the switchChange() function on the model to toggle the isFahrenheit state.
+
+While many of the properties applied to the OutlinedTextField will be familiar from previous chapters, some require additional explanation. For example, since the temperature can only be entered as a number, the keyboardOptions keyboard type property is set to KeyboardType.Number. This ensures that when the user taps within the text field, only the numeric keyboard will appear on the screen:
+
+
+Функция InputRow ожидает в качестве параметров значения состояния и функции, содержащиеся в модели представления, вместе с переменной состояния textState и обработчиком события onTextChange. Эти последние два параметра используются для отображения текста, введенного пользователем в текстовое поле, и будут “перенесены” в функцию MainScreen позже в этой главе. Текущее значение textState также передается функции convertTemp(), когда пользователь нажимает кнопку.
+
+Компонуемые элементы, составляющие этот раздел макета, размещаются в контейнере Row, который настроен так, чтобы центрировать дочерние элементы по вертикали. Первый дочерний элемент, компонент Switch, просто вызывает функцию switchChange() в модели для переключения состояния isFahrenheit.
+
+Хотя многие свойства, применяемые к OutlinedTextField, будут знакомы из предыдущих глав, некоторые требуют дополнительного объяснения. Например, поскольку температуру можно вводить только в виде числа, свойству типа клавиатуры keyboardOptions присвоено значение keyboardType.Number. Это гарантирует, что при нажатии пользователем в текстовом поле на экране будет отображаться только цифровая клавиатура:
+*/
+
+keyboardOptions = KeyboardOptions(
+  keyboardType = KeyboardType.Number
+)
+
+/*
+Other keyboard type options include email address, password, phone number, and URI inputs.
+
+The input is also limited to a single line of text using the singleLine property. As the name suggests, the OutlinedTextField component draws an outline around the text input area. When the component is not selected by the user (in other words, it does not have “focus”), the text assigned to the label property appears in slightly faded text within the text field, as shown in Figure 43-5:
+
+
+Другие разновидности типа клавиатуры включают адрес электронной почты, пароль, номер телефона и URI.
+
+Ввод также ограничен одной строкой текста с использованием свойства singleLine. Как следует из названия, компонент OutlinedTextField рисует контур вокруг области ввода текста. Когда компонент не выбран пользователем (другими словами, он “не в фокусе”), текст, присвоенный свойству label, отображается слегка выцветшим текстом в текстовом поле, как показано на рис. 43-5:
+*/
+
+Figure 43-5
+
+/*
+When the field has focus, however, the label appears as a title positioned within the outline:
+
+Однако, когда поле находится "в фокусе", метка отображается в виде заголовка, расположенного внутри контура:
+*/
+
+Figure 43-6
+
+/*
+The result of a call to the TextStyle function is assigned to the textStyle property of the OutlinedTextField. TextStyle is used to group style settings into a single object that can be applied to other composables in a single operation. In this instance, we are only setting font weight and font style, but TextStyle may also be used to configure style settings including color, background, font family, shadow, text alignment, letter spacing, and text indent.
+
+The trailingIcon property is used to position the previously added icon at the end of the text input area:
+
+
+Результат вызова функции TextStyle присваивается свойству textStyle текстового поля OutlinedTextField. TextStyle используется для группировки настроек стиля в единый объект, который может быть применен к другим компонуемым объектам за одну операцию. В данном случае мы устанавливаем только вес и стиль шрифта, но TextStyle также может использоваться для настройки таких параметров стиля, как цвет, фон, семейство шрифтов, тень, выравнивание текста, интервал между буквами и отступ текста.
+
+Свойство trailingIcon используется для размещения ранее добавленной иконки в конце области ввода текста:
+*/
+
+trailingIcon = {
+  Icon(
+    painter = painterResource(R.drawable.ic_baseline_ac_unit_24),
+    contentDescription = "frost",
+    modifier = Modifier
+      .size(40.dp)
+  )
+}
+
+/*
+Finally, crossfade animation (covered in the chapter titled “Compose Visibility Animation”) is used when switching the unit Text field between °F and °C (represented by Unicode values \u2109 and \u2103, respectively) based on the current isFahrenheit setting.
+
+Наконец, перекрестная анимация (описанная в главе, озаглавленной “Создание анимации видимости”) используется при переключении текстового поля единицы измерения Text между °F и °C (представленными значениями Unicode \u2109 и \u2103 соответственно) в соответствии с текущей уставкой isFahrenheit.
+*/
+
+
+
+43.7 Completing the user interface design
+-----------------------------------------
+
+/*
+The final task before testing the app is to complete the MainScreen function, which now needs to read as follows:
+
+Последней задачей перед тестированием приложения является доработка функции MainScreen, которая теперь должна выглядеть следующим образом:
+*/
+.
+.
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.remember
+.
+.
+@Composable
+fun MainScreen(
+  isFahrenheit: Boolean,
+  result: String,
+  convertTemp: (String) -> Unit,
+  switchChange: () -> Unit
+) {
+  Column(
+    horizontalAlignment = Alignment.CenterHorizontally,
+    modifier = Modifier.fillMaxSize()
+  ) {
+    var textState by remember { mutableStateOf("") }
+    val onTextChange = { text : String ->
+      textState = text
+    }
+    
+    Text(
+      "Temperature Converter",
+      modifier = Modifier.padding(20.dp),
+      style = MaterialTheme.typography.headlineSmall
+    )
+    
+    InputRow(
+      isFahrenheit = isFahrenheit,
+      textState = textState,
+      switchChange = switchChange,
+      onTextChange = onTextChange
+    )
+    
+    Text(
+      result,
+      modifier = Modifier.padding(20.dp),
+      style = MaterialTheme.typography.headlineMedium
+    )
+    
+    Button(
+      onClick = { convertTemp(textState) }
+    ) {
+      Text("Convert Temperature")
+    }
+    
+  }
+}
+
+/*
+The MainScreen composable declares the textState state variable and an onTextChange event handler. The first child of the Column layout is a static Text component displaying a title. Next, the InputRow is called and passed the necessary parameters. The third child is another Text component, this time configured to display the content of the view model result state variable. Finally, a Button composable is configured to call the view model convertTemp() function, passing it textState. The convertTemp() function will calculate the converted temperature and assign it to the result state variable, thereby triggering a recomposition of the composable hierarchy.
+
+Компонуемый элемент MainScreen объявляет переменную состояния textState и обработчик события onTextChange. Первым дочерним элементом макета Column является статический компонент Text, отображающий заголовок. Далее вызывается созданная нами компонуемая функция InputRow и ей передаются необходимые параметры. Третий дочерний элемент - это еще один компонент Text, на этот раз настроенный для отображения содержимого переменной состояния результата модели представления. Наконец, компонуемый элемент Button настроен для вызова функции convertTemp() модели представления, передавая ей textState. Функция convertTemp() вычислит преобразованную температуру и присвоит ее переменной состояния результата, тем самым инициируя рекомпоновку иерархии компонуемых элементов.
+*/
+
+
+
+43.8 Testing the app
+--------------------
+
+/*
+Test the activity by enabling interactive mode in the preview panel and tapping on the OutlinedTextField component. Note that the “Enter temperature” label moves to the outline leaving the input field clear to enter a temperature value. Verify that when the keyboard appears, it only allows numerical selections. Enter a number and click on the Button at which point the converted temperature should be displayed.
+
+Use the Switch to change from Fahrenheit to Centigrade, and note the unit text to the right of the text field changes using cross-fade animation. Finally, test that attempting a conversion with a blank text field causes the Invalid Entry text to appear.
+
+
+Протестируйте активити, включив интерактивный режим на панели предварительного просмотра и нажав на компонент OutlinedTextField. Обратите внимание, что метка “Введите температуру” перемещается на контур, оставляя поле ввода пустым для ввода значения температуры. Убедитесь, что при появлении клавиатуры допускается только числовой выбор. Введите число и нажмите на кнопку, теперь в поле должно отображаться преобразованное значение температуры.
+
+Используйте компонент Switch для переключения с градуса Фаренгейта на градус Цельсия и обратите внимание, что текст единицы измерения справа от текстового поля изменяется с помощью анимации перекрестного затухания (cross-fade). Наконец, проверьте, что попытка преобразования с пустым текстовым полем приводит к отображению сообщения о недопустимом значении введенного текста.
+*/
+
+
+
+43.9 Summary
+------------
+
+/*
+This chapter has demonstrated the use of a view model to separate the data and logic of an application from the code responsible for displaying the user interface. The chapter also introduced the OutlinedTextField component and covered customization options, including adding an icon, restricting keyboard input to numerical values, and setting style attributes using the TextStyle function.
+
+В этой главе продемонстрировано использование модели представления (view model) для отделения данных и логики приложения от кода, ответственного за отображение пользовательского интерфейса. В главе также был представлен компонент OutlinedTextField и рассмотрены параметры настройки, включая добавление иконки, ограничение ввода с клавиатуры числовыми значениями и настройку атрибутов стиля с помощью функции TextStyle.
+*/
