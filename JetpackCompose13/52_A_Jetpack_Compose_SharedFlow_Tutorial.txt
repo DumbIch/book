@@ -1,0 +1,345 @@
+52. A Jetpack Compose SharedFlow Tutorial
+=========================================
+
+/*
+The previous chapter introduced Kotlin flows and explored how these can be used to return multiple sequential values from within coroutine-based asynchronous code. This tutorial will look at a more detailed flow implementation, this time using SharedFlow. The tutorial will also demonstrate how to ensure that flow collection responds correctly to an app switching between background and foreground modes.
+
+В предыдущей главе были представлены потоки Kotlin и рассмотрено, как их можно использовать для возврата нескольких последовательных значений из асинхронного кода на основе сопрограмм. В этом руководстве будет рассмотрена более подробная реализация потока, на этот раз с использованием SharedFlow. В руководстве также будет продемонстрировано, как обеспечить правильную реакцию сбора потока на переключение приложения между фоновым и активным режимами.
+*/
+
+
+
+52.1 About the project
+----------------------
+
+/*
+The app created in this chapter will consist of a user interface containing a List composable. We will activate a shared flow within a ViewModel as soon as the view model is created and emit an integer value every two seconds. The Main Activity will collect the values from the flow and display them within the List. We will then modify the project to suspend the collection process while the app is placed in the background.
+
+Приложение, созданное в этой главе, будет состоять из пользовательского интерфейса, содержащего компонуемый список. Мы активируем общий поток в ViewModel, как только модель представления будет создана, и будем выдавать целочисленное значение каждые две секунды. Главная активити будет собирать значения из потока и отображать их в списке. Затем мы изменим проект, чтобы приостановить процесс сбора, пока приложение находится в фоновом режиме.
+*/
+
+
+
+52.2 Creating the SharedFlowDemo project
+----------------------------------------
+
+/*
+Launch Android Studio and create a new Empty Activity project named SharedFlowDemo, specifying com.example.sharedflowdemo as the package name, and selecting a minimum API level of API 26: Android 8.0 (Oreo).
+
+Within the MainActivity.kt file, delete the Greeting function and add a new empty composable named ScreenSetup which, in turn, calls a function named MainScreen:
+
+
+Запустите Android Studio и создайте новый пустой проект Empty Activity с именем SharedFlowDemo, указав com.example.sharedflowdemo в качестве имени пакета и выбрав минимальный уровень API API 26: Android 8.0 (Oreo).
+
+В файле MainActivity.kt удалите функцию Greeting и добавьте новый пустой компонуемый объект с именем ScreenSetup, который, в свою очередь, вызывает функцию с именем MainScreen:
+*/
+
+@Composable
+fun ScreenSetup() {
+  MainScreen()
+}
+
+@Composable
+fun MainScreen() {
+}
+
+/*
+Edit the OnCreate() method function to call ScreenSetup instead of Greeting and remove the Greeting call from GreetingPreview.
+
+Next, modify the build.gradle (Module: app) file to add the Compose view model and Kotlin runtime extensions libraries to the dependencies section:
+
+
+Отредактируйте функцию метода onCreate(), чтобы вызвать ScreenSetup вместо Greeting, и удалите вызов Greeting из GreetingPreview.
+
+Далее измените файл build.gradle (модуль: app), чтобы добавить библиотеку модели представления Compose и библиотеки расширений среды выполнения Kotlin в раздел зависимостей:
+*/
+
+dependencies {
+.
+.
+implementation 'androidx.lifecycle:lifecycle-viewmodel-compose:2.5.1'
+implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.5.1'
+.
+}
+
+/*
+When prompted, click on the Sync Now button at the top of the editor panel to commit to the change.
+
+При появлении запроса нажмите на кнопку Sync Now в верхней части панели редактора, чтобы зафиксировать изменение.
+*/
+
+
+
+52.3 Adding a view model to the project
+---------------------------------------
+
+/*
+For this project, the flow will once again reside in a view model class. Add this model to the project by locating and right-clicking on the app -> java -> com.example.sharedflowdemo entry in the Project tool window and selecting the New -> Kotlin Class/File menu option. In the resulting dialog, name the class DemoViewModel before tapping the keyboard Enter key. Once created, modify the file so that it reads as follows:
+
+Для этого проекта поток снова будет находиться в классе модели представления. Добавьте эту модель в проект, найдя и щелкнув правой кнопкой мыши на записи app -> java -> com.example.sharedflowdemo в окне Project tool и выбрав пункт меню New -> Kotlin Class/File. В появившемся диалоговом окне назовите класс DemoViewModel, прежде чем нажать клавишу Enter на клавиатуре. После создания внесите изменения в файл, чтобы он выглядел следующим образом:
+*/
+
+package com.example.flowdemo
+
+import androidx.lifecycle.ViewModel
+
+class DemoViewModel : ViewModel() {
+}
+
+/*
+Return to the MainActivity.kt file and make changes to access an instance of the view model:
+
+Вернитесь к файлу MainActivity.kt и внесите изменения, чтобы получить доступ к экземпляру модели представления:
+*/
+.
+.
+import androidx.lifecycle.viewmodel.compose.viewModel
+.
+.
+@Composable
+fun ScreenSetup(viewModel: DemoViewModel = viewModel()) {
+  MainScreen()
+}
+
+
+
+52.4 Declaring the SharedFlow
+-----------------------------
+
+/*
+The next step is to add some code to the view model to create and start the SharedFlow instance. Begin by editing the DemoViewModel.kt file so that it reads as follows:
+
+Следующим шагом является добавление некоторого кода в модель представления для создания и запуска экземпляра SharedFlow. Отредактируйте файл DemoViewModel.kt, чтобы он выглядел следующим образом:
+*/
+
+package com.example.sharedflowdemo
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.launch
+
+class DemoViewModel : ViewModel() {
+  private val _sharedFlow = MutableSharedFlow<Int>()
+  val sharedFlow = _sharedFlow.asSharedFlow()
+
+  init {
+    sharedFlowInit()
+  }
+  
+  fun sharedFlowInit() {
+  }
+}
+
+/*
+When the ViewModel instance is created, the initializer will call the sharedFlowInit() function. This function aims to launch a new coroutine containing a loop in which new values are emitted using a shared flow. With the flow declared, we can add code to the sharedFlowInit() function to launch the flow using the view model’s scope. This will ensure that the flow ends when the view model is destroyed:
+
+Когда экземпляр ViewModel будет создан, инициализатор вызовет функцию sharedFlowInit(). Цель этой функции - запустить новую сопрограмму, содержащую цикл, в котором новые значения генерируются с использованием общего потока. С объявленным потоком мы можем добавить код в функцию sharedFlowInit() для запуска потока с использованием области видимости модели. Это гарантирует, что поток завершится при уничтожении модели представления:
+*/
+
+private fun sharedFlowInit() {
+  viewModelScope.launch {
+    for (i in 1..1000) {
+      delay(2000)
+      _sharedFlow.emit(i)
+    }
+  }
+}
+
+
+
+52.5 Collecting the flow values
+-------------------------------
+
+/*
+Before testing the app for the first time we need to add some code to perform the flow collection and display those values in a LazyColumn composable. As the values are collected from the flow, we will add them to a mutable list state instance which, in turn, will serve as the data source for the LazyColumn content. We also need to pass a reference to the shared flow down to the MainScreen composable. Edit the MainActivity.kt file and make the following changes:
+
+Перед первым тестированием приложения нам нужно добавить некоторый код для выполнения сбора потока и отображения этих значений в компонуемом элементе LazyColumn. Поскольку значения собираются из потока, мы добавим их в изменяемый экземпляр состояния списка, который, в свою очередь, будет служить источником данных для содержимого макета LazyColumn. Нам также нужно передать ссылку на общий поток в компонуемую функцию MainScreen. Отредактируйте файл MainActivity.kt и внесите следующие изменения:
+*/
+.
+.
+import androidx.compose.runtime.*
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.*
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalLifecycleOwner
+import kotlinx.coroutines.flow.SharedFlow
+.
+.
+@Composable
+fun ScreenSetup(viewModel: DemoViewModel = viewModel()) {
+  MainScreen(viewModel.sharedFlow)
+}
+
+@Composable
+fun MainScreen(sharedFlow: SharedFlow<Int>) {
+  val messages = remember { mutableStateListOf<Int>()}
+  LazyColumn {
+    items(messages) {
+      Text(
+        "Collected Value = $it",
+        style = MaterialTheme.typography.headlineLarge,
+        modifier = Modifier.padding(5.dp)
+      )
+    }
+  }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun GreetingPreview() {
+  SharedFlowDemoTheme {
+    val viewModel: DemoViewModel = viewModel()
+    MainScreen(viewModel.sharedFlow)
+  }
+}
+
+/*
+With these changes made we are ready to collect the values emitted by the shared flow and display them. Since the flow collection will be taking place in a coroutine and outside the scope of the MainScreen composable, the launch code needs to be placed within a LaunchedEffect call (a topic covered in the chapter titled “Coroutines and LaunchedEffects in Jetpack Compose”. Add a LaunchedEffect call to the MainScreen composable as follows to collect from the flow:
+
+После внесения этих изменений мы готовы собирать значения, передаваемые общим потоком, и отображать их. Поскольку сбор потока будет осуществляться в сопрограмме и за пределами области компонуемого элемента MainScreen, код запуска необходимо поместить в вызов LaunchedEffect (тема, рассмотренная в главе под названием “Сопрограммы и LaunchedEffects в Jetpack Compose”. Добавьте вызов LaunchedEffect в компонуемую функцию MainScreen следующим образом, чтобы реализовать сбор из потока:
+*/
+.
+.
+import kotlinx.coroutines.flow.collect
+.
+.
+@Composable
+fun MainScreen(sharedFlow: SharedFlow<Int>) {
+  val messages = remember { mutableStateListOf<Int>()}
+  val lifecycleOwner = LocalLifecycleOwner.current
+  LaunchedEffect(key1 = Unit) {
+    sharedFlow.collect {
+    messages.add(it)
+  }
+}
+.
+.
+
+/*
+This code accesses the shared flow instance within the view model and begins collecting values from the stream. Each collected value is added to the messages mutable list. This will cause a recomposition and the new value will appear at the end of the LazyColumn list.
+
+Этот код обращается к экземпляру общего потока в модели представления и начинает собирать значения из потока. Каждое собранное значение добавляется в изменяемый список сообщений. Это вызовет рекомпозицию, и новое значение появится в конце списка LazyColumn.
+*/
+
+
+
+52.6 Testing the SharedFlowDemo app
+-----------------------------------
+
+/*
+Compile and run the app on a device or emulator and verify that values appear within the LazyColumn as the shared flow emits them. Rotate the device into landscape orientation to trigger a configuration change and confirm that the count continues without restarting from zero:
+
+Скомпилируйте и запустите приложение на устройстве или эмуляторе и убедитесь, что значения отображаются в столбце LazyColumn по мере их выдачи общим потоком. Поверните устройство в альбомную ориентацию, чтобы инициировать изменение конфигурации, и подтвердите, что подсчет продолжается без перезапуска с нуля:
+*/
+
+Figure 52-1
+
+/*
+With the app now working, it is time to look at what happens when it is placed in the background.
+
+Теперь, когда приложение работает, пришло время посмотреть, что происходит, когда оно переводится в фоновый режим.
+*/
+
+
+
+52.7 Handling flows in the background
+-------------------------------------
+
+/*
+Our app has a shared flow that feeds values to the user interface in the form of a LazyColumn. By performing the collection in a coroutine scope, the user interface remains responsive while the flow is being collected (you can verify this by scrolling up and down within the list of values while the list is updating). This raises the question of what happens when the app is placed in the background. To find out, we can add some diagnostic output to both the emitter and collector code. First, edit the DemoViewModel.kt file and add a println() call within the body of the emission for loop:
+
+Наше приложение имеет общий поток, который передает значения в пользовательский интерфейс в виде LazyColumn. При выполнении сбора в области действия сопрограммы пользовательский интерфейс остается отзывчивым во время сбора потока (вы можете убедиться в этом, прокручивая вверх и вниз список значений во время обновления списка). Возникает вопрос о том, что происходит, когда приложение переводится в фоновый режим. Чтобы выяснить это, мы можем добавить некоторые диагностические выходные данные как в код эмиттера, так и в код коллектора. Сначала отредактируйте файл DemoViewModel.kt и добавьте вызов println() в тело цикла-эмиттера for:
+*/
+
+private fun sharedFlowInit() {
+  viewModelScope.launch {
+    for (i in 1..1000) {
+      delay(2000)
+      println("Emitting $i")
+      _sharedFlow.emit(i)
+    }
+  }
+}
+
+/*
+Make a similar change to the collection code block in the MainActivity.kt file as follows:
+
+Внесите аналогичное изменение в блок кода коллекции в файле MainActivity.kt следующим образом:
+*/
+.
+.
+LaunchedEffect(key1 = Unit) {
+  sharedFlow.collect {
+    println("Collecting $it")
+    messages.add(it)
+  }
+}
+.
+.
+
+/*
+Once these changes have been made, display the Logcat tool window, enter System.out into the search bar, and run the app. As the list of values updates, output similar to the following should appear in the Logcat tool window:
+
+Как только эти изменения будут внесены, откройте окно инструмента Logcat, введите System.out в строке поиска и запустите приложение. По мере обновления списка значений в окне инструмента Logcat должны появиться выходные данные, аналогичные приведенным ниже:
+*/
+
+Emitting 1
+Collecting 1
+Emitting 2
+Collecting 2
+Emitting 3
+Collecting 3
+.
+.
+
+/*
+Now place the app in the background and note that both the emission and collection operations continue to run, even though the app is no longer visible to the user. The continued emission is to be expected and is the correct behavior for a shared flow residing within a view model. However, it is wasteful of resources to collect data and update a user interface that is not currently visible to the user. We can resolve this problem by executing the collection using the repeatOnLifecycle function. The repeatOnLifecycle function is a suspend function that runs a specified block of code each time the current lifecycle reaches or exceeds one of the following states:
+
+Теперь переведите приложение в фоновый режим и обратите внимание, что операции отправки и сбора данных продолжают выполняться, даже если приложение больше не видно пользователю. Продолжение отправки ожидаемо и является правильным поведением для общего потока, находящегося в модели представления. Однако сбор данных и обновление пользовательского интерфейса, который в данный момент не виден пользователю, является расточительной тратой ресурсов. Мы можем решить эту проблему, выполнив сбор с помощью функции repeatOnLifecycle. Функция repeatOnLifecycle - это функция приостановки, которая запускает указанный блок кода каждый раз, когда текущий жизненный цикл достигает или превышает одно из следующих состояний:
+
+• Lifecycle.State.INITIALIZED
+• Lifecycle.State.CREATED
+• Lifecycle.State.STARTED
+• Lifecycle.State.RESUMED
+• Lifecycle.State.DESTROYED
+
+Conversely, when the lifecycle drops below the target state, the coroutine is canceled.
+In this case, we want the collection to start each time Lifecycle.State.STARTED is reached and to stop when the lifecycle is suspended. To implement this, modify the collection code as follows:
+
+И наоборот, когда жизненный цикл опускается ниже целевого состояния, сопрограмма отменяется.
+В этом случае мы хотим, чтобы сбор данных запускался каждый раз, когда выполняется Lifecycle.State.STARTED при достижении и остановке, когда жизненный цикл приостановлен. Чтобы реализовать это, измените код сбора следующим образом:
+*/
+.
+.
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.repeatOnLifecycle
+.
+.
+LaunchedEffect(key1 = Unit) {
+  lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+    sharedFlow.collect {
+      println("Collecting $it")
+      messages.add(it)
+    }
+  }
+}
+
+/*
+Run the app once again, place it in the background and note that only the emission diagnostic messages appear in the Logcat output, confirming that the main activity is no longer collecting values and adding them to the RecyclerView list. When the app is brought to the foreground, the collection will resume at the latest emitted value since we did not configure replay on the shared flow.
+
+Запустите приложение еще раз, переведите его в фоновый режим и обратите внимание, что в выходных данных Logcat отображаются только сообщения о диагностике выбросов, подтверждающие, что основным действием больше не является сбор значений и добавление их в список RecyclerView. Когда приложение будет выведено на передний план, сбор данных возобновится с последним выданным значением, поскольку мы не настраивали воспроизведение в общем потоке.
+*/
+
+
+
+52.8 Summary
+------------
+
+/*
+In this chapter, we created a SharedFlow instance within a view model. We then collected the streamed values within the main activity and used that data to update the user interface. We also outlined the importance of avoiding unnecessary flow-driven user interface updates when an app is placed in the background, a problem that can easily be resolved using the repeatOnLifecycle function. We can use this function to cancel and restart asynchronous tasks such as flow collection when the containing lifecycle reaches a target lifecycle state.
+
+В этой главе мы создали экземпляр SharedFlow в модели представления. Затем мы собрали передаваемые значения в рамках главной активити и использовали эти данные для обновления пользовательского интерфейса. Мы также подчеркнули важность предотвращения ненужных обновлений пользовательского интерфейса, управляемых потоком, когда приложение переводится в фоновый режим, - проблема, которую можно легко решить с помощью функции repeatOnLifecycle. Мы можем использовать эту функцию для отмены и перезапуска асинхронных задач, таких как сбор потока, когда содержащий жизненный цикл достигает целевого состояния жизненного цикла.
+*/
