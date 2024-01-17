@@ -1,0 +1,307 @@
+42. Working with ViewModels in Compose
+======================================
+
+/*
+Until a few years ago, Google did not recommend a specific approach to building Android apps other than to provide tools and development kits while letting developers decide what worked best for a particular project or individual programming style. That changed in 2017 with the introduction of the Android Architecture Components which became part of Android Jetpack when it was released in 2018. Jetpack has of course, since been expanded with the addition of Compose.
+
+This chapter will provide an overview of the concepts of Jetpack, Android app architecture recommendations, and the ViewModel component.
+
+
+Еще несколько лет назад Google не рекомендовала какой-либо конкретный подход к созданию приложений для Android, кроме предоставления инструментов и наборов для разработки, позволяя разработчикам решать, что лучше всего подходит для конкретного проекта или индивидуального стиля программирования. Это изменилось в 2017 году с появлением компонентов архитектуры Android, которые стали частью Android Jetpack, когда он был выпущен в 2018 году. С тех пор Jetpack, конечно, был расширен за счет добавления Compose.
+
+В этой главе будет представлен обзор концепций Jetpack, рекомендаций по архитектуре приложений для Android и компонента ViewModel.
+*/
+
+
+
+42.1 What is Android Jetpack?
+-----------------------------
+
+/*
+Android Jetpack consists of Android Studio, the Android Architecture Components, Android Support Library, and the Compose framework together with a set of guidelines that recommend how an Android App should be structured. The Android Architecture Components were designed to make it quicker and easier both to perform common tasks when developing Android apps while also conforming to the key principle of the architectural guidelines. While many of these components have been superseded by features built into Compose, the ViewModel architecture component remains relevant today. Before exploring the ViewModel component, it first helps to understand both the old and new approaches to Android app architecture.
+
+Android Jetpack состоит из Android Studio, компонентов архитектуры Android, библиотеки поддержки Android и платформы Compose framework, а также набора наставлений, которые рекомендуют, как должно быть структурировано приложение для Android. Компоненты архитектуры Android были разработаны таким образом, чтобы ускорить и упростить выполнение обычных задач при разработке приложений для Android, а также соответствовать ключевому принципу наставлений по архитектуре. Хотя многие из этих компонентов были заменены функциями, встроенными в Compose, компонент архитектуры ViewModel остается актуальным и сегодня. Прежде чем приступить к изучению компонента ViewModel, сначала полезно понять как старые, так и новые подходы к архитектуре приложений Android.
+*/
+
+
+
+42.2 The “old” architecture
+---------------------------
+
+/*
+In the chapter entitled “An Example Compose Project”, an Android project was created consisting of a single activity that contained all of the code for presenting and managing the user interface together with the back-end logic of the app. Up until the introduction of Jetpack, the most common architecture followed this paradigm with apps consisting of multiple activities (one for each screen within the app) with each activity class to some degree mixing user interface and back-end code.
+
+This approach led to a range of problems related to the lifecycle of an app (for example an activity is destroyed and recreated each time the user rotates the device leading to the loss of any app data that had not been saved to some form of persistent storage) as well as issues such as inefficient navigation involving launching a new activity for each app screen accessed by the user.
+
+
+В главе “Пример проекта Compose”, был создан проект Android, состоящий из единственной активити, которая содержала весь код для представления пользовательского интерфейса и управления им вместе с внутренней логикой приложения. Вплоть до появления Jetpack наиболее распространенная архитектура следовала парадигме с приложениями, состоящими из нескольких активити (по одной для каждого экрана в приложении), причем каждый класс активити в некоторой степени смешивал пользовательский интерфейс и внутренний код.
+
+Такой подход привел к целому ряду проблем, связанных с жизненным циклом приложения (например, активити уничтожается и создается заново каждый раз, когда пользователь поворачивает устройство, что приводит к потере любых данных приложения, которые не были сохранены в какой-либо форме постоянного хранилища), а также к таким проблемам, как неэффективная навигация, связанная с запуском новоой активити для каждого экрана приложения, к которому обращается пользователь.
+*/
+
+
+
+42.3 Modern Android architecture
+--------------------------------
+
+/*
+At the most basic level, Google now advocates single activity apps where different screens are loaded as content within the same activity.
+
+Modern architecture guidelines also recommend separating different areas of responsibility within an app into entirely separate modules (a concept called “separation of concerns”). One of the keys to this approach is the ViewModel component.
+
+
+На самом базовом уровне в настоящее время Google выступает за приложения с единственной активити, в которых разные экраны загружаются как контент в рамках одной и той же активити (речь идет о фрагментах).
+
+Современные наставления по архитектуре также рекомендуют разделять различные области ответственности в приложении на совершенно отдельные модули (концепция, называемая “разделение ответственности”). Одним из ключей к этому подходу является компонент ViewModel.
+*/
+
+
+
+42.4 The ViewModel component
+----------------------------
+
+/*
+The purpose of ViewModel is to separate the user interface-related data model and logic of an app from the code responsible for displaying and managing the user interface and interacting with the operating system.
+
+When designed in this way, an app will consist of one or more UI Controllers, such as an activity, together with ViewModel instances responsible for handling the data needed by those controllers.
+
+A ViewModel is implemented as a separate class and contains state values containing the model data and functions that can be called to manage that data. The activity containing the user interface observes the model state values such that any value changes trigger a recomposition. User interface events relating to the model data such as a button click are configured to call the appropriate function within the ViewModel. This is, in fact, a direct implementation of the unidirectional data flow concept described in the chapter entitled “An Overview of Compose State and Recomposition”. The diagram in Figure 42-1 illustrates this concept as it relates to activities and ViewModels:
+
+
+
+Цель компонента ViewModel - отделить модель данных и логику приложения, связанные с пользовательским интерфейсом, от кода, ответственного за отображение пользовательского интерфейса и управление им, а также взаимодействие с операционной системой.
+
+
+При таком подходе к разработке приложение будет состоять из одного или нескольких контроллеров пользовательского интерфейса, таких как активити, вместе с экземплярами ViewModel, ответственными за обработку данных, необходимых этим контроллерам.
+ViewModel реализован как отдельный класс, инкапсулирующий значения состояния, содержащие данные модели, и функции, которые могут быть вызваны для управления этими данными. Активити, содержащее пользовательский интерфейс, наблюдает за значениями состояния модели таким образом, что любые изменения значений запускают рекомпозицию. События пользовательского интерфейса, относящиеся к данным модели, такие как нажатие кнопки, настраиваются для вызова соответствующей функции в ViewModel. Фактически, это прямая реализация концепции однонаправленного потока данных, описанной в главе “Обзор состояния компоновки и рекомпозиция”. Диаграмма на рис. 42-1 иллюстрирует эту концепцию в том виде, в каком она соотносится с классами Activity и ViewModel:
+*/
+
+Figure 42-1
+
+/*
+This separation of responsibility addresses the issues relating to the lifecycle of activities. Regardless of how many times an activity is recreated during the lifecycle of an app, the ViewModel instances remain in memory thereby maintaining data consistency. A ViewModel used by an activity, for example, will remain in memory until the activity finishes which, in the single activity app, is not until the app exits.
+
+In addition to using ViewModels, the code responsible for gathering data from data sources such as web services or databases should be built into a separate repository module instead of being bundled with the view model. This topic will be covered in detail beginning with the chapter entitled “Room Databases and Compose”.
+
+
+Такое разделение ответственности решает проблемы, связанные с жизненным циклом активити. Независимо от того, сколько раз активити воссоздается в течение жизненного цикла приложения, экземпляры ViewModel остаются в памяти, тем самым поддерживая согласованность данных. Например, ViewModel, используемая активити, будет оставаться в памяти до тех пор, пока активити не завершится, чего в приложении с единственной активити не произойдет до тех пор, пока приложение не завершит работу.
+
+В дополнение к использованию ViewModels, код, ответственный за сбор данных из источников данных, таких как веб-службы или базы данных, должен быть встроен в отдельный модуль репозитория, а не в комплекте с моделью представления. Эта тема будет подробно рассмотрена, начиная с главы “Базы данных Room и Compose”.
+*/
+
+
+
+42.5 ViewModel implementation using state
+-----------------------------------------
+
+/*
+The main purpose of a ViewModel is to store data that can be observed by the user interface of an activity. This allows the user interface to react when changes occur to the ViewModel data. There are two ways to declare the data within a ViewModel so that it is observable. One option is to use the Compose state mechanism which has been used extensively throughout this book. An alternative approach is to use the Jetpack LiveData component, a topic that will be covered later in this chapter.
+
+Much like the state declared within composables, ViewModel state is declared using the mutableStateOf group of functions. The following ViewModel declaration, for example, declares a state containing an integer count value with an initial value of 0:
+
+
+Основное назначение ViewModel - хранить данные, которые отслеживаются пользовательским интерфейсом активити. Это позволяет пользовательскому интерфейсу реагировать, когда происходят изменения в данных ViewModel. Существует два способа объявить данные в ViewModel так, чтобы они были доступны для наблюдения. Один из вариантов - использовать механизм состояний, встроенный в Compose, который широко использовался на протяжении всей этой книги. Альтернативный подход заключается в использовании компонента Jetpack LiveData, тема которого будет рассмотрена позже в этой главе.
+
+Подобно состоянию, объявленному в компонуемых элементах, состояние ViewModel объявляется с использованием функции mutableStateOf. Следующее объявление ViewModel, например, объявляет состояние, содержащее целочисленное значение счетчика с начальным значением 0:
+*/
+
+class MyViewModel : ViewModel() {
+
+  var customerCount by mutableStateOf(0)
+  
+}
+
+/*
+With some data encapsulated in the model, the next step is to add a function that can be called from within the UI to change the counter value:
+
+Поскольку некоторые данные инкапсулированы в модель, следующим шагом является добавление функции, которую можно вызвать из пользовательского интерфейса для изменения значения счетчика:
+*/
+
+class MyViewModel : ViewModel() {
+
+  var customerCount by mutableStateOf(0)
+  
+  fun increaseCount() {
+    customerCount++
+  }
+  
+}
+
+/*
+Even complex models are nothing more than a continuation of these two basic state and function building blocks.
+
+Даже сложные модели являются не чем иным, как продолжением этих двух основ: состояния и функции построения блоков.
+*/
+
+
+
+42.6 Connecting a ViewModel state to an activity
+------------------------------------------------
+
+/*
+A ViewModel is of little use unless it can be used within the composables that make up the app user interface. All this requires is to pass an instance of the ViewModel as a parameter to a composable from which the state values and functions can be accessed. Programming convention recommends that these steps be performed in a composable dedicated solely for this task and located at the top of the screen’s composable hierarchy. The model state and event handler functions can then be passed to child composables as necessary. The following code shows an example of how a ViewModel might be accessed from within an activity:
+
+ViewModel бесполезен, если его нельзя использовать в компонуемых элементах, составляющих пользовательский интерфейс приложения. Все, что для этого требуется, - это передать экземпляр ViewModel в качестве параметра в компонуемый элемент, из которого можно получить доступ к значениям состояния и функциям. Соглашение о программировании рекомендует, чтобы эти шаги выполнялись в компонуемом элементе, предназначенном исключительно для этой задачи и расположенном в верхней части компонуемой иерархии экрана. Затем функции состояния модели и обработчика событий могут быть переданы дочерним компонуемым файлам по мере необходимости. Следующий код показывает пример того, как можно получить доступ к ViewModel из активити:
+*/
+
+
+class MainActivity : ComponentActivity() {
+
+  override fun onCreate(savedInstanceState: Bundle?) {
+    super.onCreate(savedInstanceState)
+    setContent {
+      ViewModelWorkTheme {
+        Surface(color = MaterialTheme.colorScheme.background) {
+          TopLevel()
+        }
+      }
+    }
+  }
+  
+}
+
+@Composable
+fun TopLevel(model: MyViewModel = viewModel()) {
+  MainScreen(model.customerCount) { model.increaseCount() }
+}
+
+@Composable
+fun MainScreen(count: Int, addCount: () -> Unit = {}) {
+  Column(
+    horizontalAlignment = Alignment.CenterHorizontally,
+    modifier = Modifier.fillMaxWidth()
+  ) {
+    Text(
+      "Total customers = $count",
+      Modifier.padding(10.dp)
+    )
+    Button(
+      onClick = addCount,
+    ) {
+      Text(text = "Add a Customer"
+    }
+  }
+}
+
+/*
+In the above example, the first function call is made by the onCreate() method to the TopLevel composable which is declared with a default ViewModel parameter initialized via a call to the viewModel() function:
+
+В приведенном выше примере первый вызов функции выполняется в методе onCreate() для компонуемого объекта TopLevel, который объявлен с параметром ViewModel по умолчанию, инициализированным с помощью вызова функции viewModel():
+*/
+
+@Composable
+fun TopLevel(model: MyViewModel = viewModel()) {
+.
+.
+
+/*
+The viewModel() function is provided by the Compose view model lifecycle library which needs to be added to the project’s build dependencies when working with view models as follows:
+
+Функция ViewModel() предоставляется библиотекой жизненного цикла модели представления Compose, которую необходимо добавить в зависимости сборки проекта при работе с моделями представлений следующим образом:
+*/
+
+dependencies {
+.
+.
+implementation 'androidx.lifecycle:lifecycle-viewmodel-compose:2.4.1'
+.
+.
+
+/*
+If an instance of the view model has already been created within the current scope, the viewModel() function will return a reference to that instance. Otherwise, a new view model instance will be created and returned.
+
+With access to the ViewModel instance, the TopLevel function is then able to obtain references to the view model customerCount state variable and increaseCount() function which it passes to the MainScreen composable:
+
+
+Если экземпляр модели представления уже был создан в текущей области видимости, функция viewModel() вернет ссылку на этот экземпляр. В противном случае будет создан и возвращен новый экземпляр модели представления.
+
+Имея доступ к экземпляру ViewModel, функция TopLevel затем может получать ссылки на переменную состояния модели представления customerCount и функцию increaseCount(), которые она передает компонуемой функции MainScreen:
+*/
+
+MainScreen(model.customerCount) { model.increaseCount() }
+
+/*
+As implemented, Button clicks will result in calls to the view model increaseCount() function which, in turn, increments the customerCount state. This change in state triggers a recomposition of the user interface, resulting in the new customer count value appearing in the Text composable.
+
+The use of state and view models will be demonstrated in the chapter entitled “A Compose ViewModel Tutorial”.
+
+
+В имеющейся на данный момент реализации кода, нажатие кнопки приведет к вызову функции модели представления increaseCount(), которая, в свою очередь, увеличивает на единицу состояние customerCount. Это изменение состояния запускает рекомпозицию пользовательского интерфейса, в результате чего в компонуемом элементе Text появляется новое значение счетчика.
+
+Использование состояния и моделей представления будет продемонстрировано в главе “Руководство по созданию ViewModel”.
+*/
+
+
+
+42.7 ViewModel implementation using LiveData
+--------------------------------------------
+
+/*
+The Jetpack LiveData component predates the introduction of Compose and can be used as a wrapper around data values within a view model. Once contained in a LiveData instance, those variables become observable to composables within an activity. LiveData instances can be declared as being mutable using the MutableLiveData class, allowing the ViewModel functions to make changes to the underlying data value. An example view model designed to store a customer name could, for example, be implemented as follows using MutableLiveData instead of state:
+
+Компонент Jetpack LiveData появился до Compose и может использоваться в качестве обертки для значений данных в модели представления. Переменные, содержащиеся в экземпляре LiveData, становятся наблюдаемыми для компонуемых элементов в составе активити. Экземпляры LiveData могут быть объявлены как изменяемые с помощью класса MutableLiveData, что позволяет функциям ViewModel вносить изменения в базовое значение данных. Пример модели представления, предназначенной для хранения имени клиента, может быть, в частности, реализован следующим образом с использованием MutableLiveData вместо состояния:
+*/
+
+class MyViewModel : ViewModel() {
+
+  var customerName: MutableLiveData<String> = MutableLiveData("")
+
+  fun setName(name: String) {
+    customerName.value = name
+  }
+  
+}
+
+/*
+Note that new values must be assigned to the live data variable via the value property.
+
+Обратите внимание, что новые значения должны быть присвоены переменной LiveData с помощью свойства value.
+*/
+
+
+
+42.8 Observing ViewModel LiveData within an activity
+----------------------------------------------------
+
+/*
+As with state, the first step when working with LiveData is to obtain an instance of the view model within an initialization composable:
+
+Как и в случае с состоянием, первым шагом при работе с LiveData является получение экземпляра модели представления при инициализации компонуемого элемента:
+*/
+
+@Composable
+fun TopLevel(model: MyViewModel = viewModel()) {
+}
+
+/*
+Once we have access to a view model instance, the next step is to make the live data observable. This is achieved by calling the observeAsState() method on the live data object:
+
+Как только у нас будет доступ к экземпляру модели представления, следующим шагом будет сделать данные LiveData доступными для наблюдения. Это достигается вызовом метода observeAsState() для объекта LiveData:
+*/
+
+@Composable
+fun TopLevel(model: MyViewModel = viewModel()) {
+  var customerName: String by model.customerName.observeAsState("")
+}
+
+/*
+In the above code, the observeAsState() call converts the live data value into a state instance and assigns it to the customerName variable. Once converted, the state will behave in the same way as any other state object, including triggering recompositions whenever the underlying value changes.
+
+The use of LiveData and view models will be demonstrated in the chapter entitled “A Compose Room Database and Repository Tutorial”.
+
+
+В приведенном выше коде вызов observeAsState() преобразует текущее значение данных в экземпляр состояния и присваивает его переменной customerName. После преобразования данное состояние будет вести себя так же, как и любой другой объект состояния, включая запуск рекомпозиций всякий раз, когда изменяется базовое значение.
+
+Использование LiveData и моделей представления будет продемонстрировано в главе “Руководство по созданию базы данных и репозитория Compose Room”.
+*/
+
+
+
+42.9 Summary
+------------
+
+/*
+Until recently, Google has tended not to recommend any particular approach to structuring an Android app. That changed with the introduction of Android Jetpack which consists of a set of tools, components, libraries, and architecture guidelines. These architectural guidelines recommend that an app project be divided into separate modules, each being responsible for a particular area of functionality, otherwise known as “separation of concerns”. In particular, the guidelines recommend separating the view data model of an app from the code responsible for handling the user interface. This is achieved using the ViewModel component. In this chapter, we have covered ViewModel-based architecture and demonstrated how this is implemented when developing with Compose. We have also explored how to observe and access view model data from within an activity using both state and LiveData.
+
+До недавнего времени Google, как правило, не рекомендовал какой-либо конкретный подход к структурированию приложения для Android. Ситуация изменилась с появлением Android Jetpack, который состоит из набора инструментов, компонентов, библиотек и наставлений по архитектуре. В этих наставлениях рекомендуется разделить проект приложения на отдельные модули, каждый из которых отвечает за определенную область функциональности, иначе известную как “разделение ответственности”. В частности, в наставлениях рекомендуется отделять модель представления данных приложения от кода, ответственного за обработку пользовательского интерфейса. Это достигается с помощью компонента ViewModel. В этой главе мы рассмотрели архитектуру на основе ViewModel и продемонстрировали, как это реализуется при разработке с помощью Compose. Мы также изучили, как наблюдать за данными модели представления и получать к ним доступ из активити, используя как состояние, так и переменные LiveData.
+*/
