@@ -1,0 +1,939 @@
+51. An Introduction to Kotlin Flow
+==================================
+
+/*
+The earlier chapter, “Coroutines and LaunchedEffects in Jetpack Compose” taught us about Kotlin Coroutines. It explained how we can use them to perform multiple tasks concurrently without blocking the main thread. However, a shortcoming of suspend functions is that they are typically only useful for performing tasks that either do not return a result or only return a single value. In this chapter, we will introduce Kotlin Flows and explore how these can be used to return sequential streams of results from coroutine-based tasks.
+
+By the end of the chapter, you should understand the Flow, StateFlow, and SharedFlow Kotlin types and appreciate the difference between hot and cold flow streams. In the next chapter (“A Jetpack Compose SharedFlow Tutorial”), we will look more closely at using SharedFlow within the context of an example Android app project.
+
+
+Ранее в главе “Сопрограммы и запущенные эффекты в Jetpack Compose” мы узнали о сопрограммах Kotlin. В ней объяснялось, как мы можем использовать их для одновременного выполнения нескольких задач, не блокируя основной поток. Однако недостатком функций приостановки является то, что они обычно полезны только для выполнения задач, которые либо не возвращают результат, либо возвращают только одно значение. В этой главе мы познакомимся с потоками Kotlin и рассмотрим, как их можно использовать для возврата последовательных потоков результатов из задач, основанных на сопрограммах.
+
+К концу главы вы должны разобраться в типах Kotlin Flow, State Flow и SharedFlow и оценить разницу между горячими и холодными потоками flow. В следующей главе (“Руководство по созданию SharedFlow с помощью Jetpack”) мы более подробно рассмотрим использование SharedFlow в контексте примера проекта приложения для Android.
+*/
+
+
+
+51.1 Understanding Flows
+------------------------
+
+/*
+Flows are a part of the Kotlin programming language and are designed to allow multiple values to be returned sequentially from coroutine-based asynchronous tasks. A stream of data arriving over time via a network connection would, for example, be an ideal situation for using a Kotlin flow.
+
+Flows are comprised of producers, intermediaries, and consumers. Producers are responsible for providing the data that makes up the flow. The code that retrieves the stream of data from our hypothetical network connection, for example, would be considered a producer. As each data value becomes available, the producer emits that value to the flow. The consumer sits at the opposite end of the flow stream and collects the values as the producer emits them.
+
+Intermediaries may be placed between the producer and consumer to perform additional operations on the data, such as filtering the stream, performing further processing, or transforming the data in other ways before it reaches the consumer. Figure 51-1 illustrates the typical structure of a Kotlin flow:
+
+
+Flows являются частью языка программирования Kotlin и предназначены для обеспечения возможности последовательного возврата нескольких значений из асинхронных задач на основе сопрограмм. Поток данных, поступающий с течением времени через сетевое соединение, был бы, например, идеальной ситуацией для использования Kotlin flow.
+
+Flows состоят из производителей, посредников и потребителей. Производители несут ответственность за предоставление данных, составляющих поток. Код, который извлекает поток данных, например, из нашего гипотетического сетевого подключения, будет считаться производителем. По мере того, как каждое значение данных становится доступным, производитель передает это значение потоку. Потребитель находится на противоположном конце потока данных и собирает значения по мере их передачи производителем.
+
+Между производителем и потребителем могут быть установлены посредники для выполнения дополнительных операций с данными, таких как фильтрация потока, дальнейшая обработка или преобразование данных другими способами, прежде чем они дойдут до потребителя. Рисунок 51-1 иллюстрирует типичную структуру потока Kotlin:
+*/
+
+Figure 51-1
+
+/*
+The flow shown in the above diagram consists of a single producer and consumer. However, in practice, multiple consumers can collect emissions from a single producer, and for a single consumer to collect data from multiple producers.
+
+The remainder of this chapter will demonstrate many key features of Kotlin flows within the context of Jetpack Compose-based development.
+
+
+Поток (flow), показанный на приведенной выше диаграмме, состоит из одного производителя и потребителя. Однако на практикечасто встречаются ситуации, когда несколько потребителей могут собирать данные, отправляемые в поток единственным производителем, а единственный потребитель - собирать данные, отправляемые в поток несколькими производителями.
+
+В оставшейся части этой главы будут продемонстрированы многие ключевые особенности Kotlin flows в контексте разработки на основе Jetpack Compose.
+*/
+
+
+
+51.2 Creating the sample project
+--------------------------------
+
+/*
+Launch Android Studio and create a new Empty Activity project named FlowDemo, specifying com.example.flowdemo as the package name and selecting a minimum API level of API 26: Android 8.0 (Oreo).
+
+Within the MainActivity.kt file, delete the Greeting function and add a new empty composable named ScreenSetup which, in turn, calls a function named MainScreen:
+
+
+Запустите Android Studio и создайте новый пустой проект Empty Activity с именем FlowDemo, указав com.example.flowdemo в качестве имени пакета и выбрав минимальный уровень API API 26: Android 8.0 (Oreo).
+
+В файле MainActivity.kt удалите функцию Greeting и добавьте новый пустой компонуемый объект с именем ScreenSetup, который, в свою очередь, вызывает функцию с именем MainScreen:
+*/
+
+@Composable
+fun ScreenSetup() {
+  MainScreen()
+}
+
+@Composable
+fun MainScreen() {
+}
+
+/*
+Edit the onCreate() method function to call ScreenSetup instead of Greeting (we will modify the GreetingPreview composable later).
+
+Next, modify the build.gradle (Module: app) file to add the Compose view model and Kotlin runtime extensions libraries to the dependencies section:
+
+
+Отредактируйте функцию метода onCreate(), чтобы вызвать ScreenSetup вместо Greeting (мы изменим компонуемый параметр GreetingPreview позже).
+
+Далее измените файл build.gradle (модуль: app), чтобы добавить модель представления Compose и библиотеки расширений среды выполнения Kotlin в раздел зависимостей:
+*/
+
+dependencies {
+.
+.
+implementation 'androidx.lifecycle:lifecycle-viewmodel-compose:2.5.1'
+implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.5.1'
+.
+.
+}
+
+/*
+When prompted, click on the Sync Now button at the top of the editor panel to commit the change.
+
+При появлении запроса нажмите на кнопку Sync Now в верхней части панели редактора, чтобы зафиксировать изменение.
+*/
+
+
+
+51.3 Adding a view model to the project
+---------------------------------------
+
+/*
+For this project, the flow will reside in a view model class. Add this model to the project by locating and right-clicking on the app -> java -> com.example.flowdemo entry in the project tool window and selecting the New -> Kotlin Class/File menu option. In the resulting dialog, name the class DemoViewModel before tapping the keyboard Enter key. Once created, modify the file so that it reads as follows:
+
+Для этого проекта flow будет находиться в классе viewmodel. Добавьте эту модель в проект, найдя и щелкнув правой кнопкой мыши на app -> java -> com.example.flowdemo в окне project tool и выберите пункт меню New -> Kotlin Class/File. В появившемся диалоговом окне назовите класс DemoViewModel, прежде чем нажать клавишу Enter на клавиатуре. После создания внесите в файл изменения, чтобы он выглядел следующим образом:
+*/
+
+package com.example.flowdemo
+
+import androidx.lifecycle.ViewModel
+
+class DemoViewModel : ViewModel() {
+}
+
+/*
+Return to the MainActivity.kt file and make changes to access an instance of the view model:
+
+Вернитесь к файлу MainActivity.kt и внесите изменения, чтобы получить доступ к экземпляру модели представления:
+*/
+.
+.
+import androidx.lifecycle.viewmodel.compose.viewModel
+.
+.
+@Composable
+fun ScreenSetup(viewModel: DemoViewModel = viewModel()) {
+  MainScreen(
+}
+
+
+
+51.4 Declaring the flow
+-----------------------
+
+/*
+The Kotlin Flow type represents the most basic form of flow. Each flow can only emit data of a single type which must be specified when the flow is declared. The following declaration, for example, declares a Flow instance designed to stream String-based data:
+
+Тип Kotlin Flow представляет собой наиболее базовую форму flow. Каждый flow может передавать данные только одного типа, который должен быть указан при его объявлении. Например, ниже объявляется экземпляр Flow, предназначенный для потоковой передачи данных на основе строк:
+*/
+
+Flow<String>
+
+/*
+When declaring a flow, we need to assign the code to generate the data stream. This code is referred to as the producer block. This can be achieved using the flow() builder, which takes as a parameter a coroutine suspend block containing the producer block code. For example, add the following code to the DemoViewModel.kt file to declare a flow named myFlow designed to emit a stream of integer values:
+
+При объявлении flow нам нужно назначить код для генерации потока данных. Этот код называется блоком производителя. Этого можно достичь с помощью конструктора flow(), который принимает в качестве параметра блок приостановки сопрограммы, содержащий код блока производителя. Например, добавьте следующий код в файл DemoViewModel.kt, чтобы объявить flow с именем myFlow, предназначенный для выдачи потока целочисленных значений:
+*/
+
+package com.example.flowdemo
+
+import androidx.lifecycle.ViewModel
+import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.*
+
+class DemoViewModel : ViewModel() {
+  val myFlow: Flow<Int> = flow {
+    // Producer block
+  }
+}
+
+/*
+As an alternative to the flow builder, the flowOf() builder can be used to convert a fixed set of values into a flow:
+
+В качестве альтернативы построителю flow можно использовать построитель flowOf() для преобразования фиксированного набора значений в flow:
+*/
+
+val myFlow2 = flowOf(2, 4, 6, 8)
+
+/*
+Also, many Kotlin collection types now include an asFlow() extension function that can be called to convert the contained data to a flow. The following code, for example, converts an array of string values to a flow:
+
+Кроме того, многие типы коллекций Kotlin теперь включают функцию расширения asFlow(), которую можно вызвать для преобразования содержащихся в ней данных в flow. Следующий код, например, преобразует массив строковых значений в flow:
+*/
+
+val myArrayFlow = arrayOf<String>("Red", "Green", "Blue").asFlow()
+
+
+
+51.5 Emitting flow data
+-----------------------
+
+/*
+Once a flow has been built, the next step is to ensure the data is emitted so that it reaches any consumers observing it. Of the three flow builders we looked at in the previous section, only the flowOf() and asFlow() builders create flows that automatically emit the data as soon as a consumer starts collecting. In the case of the flow builder, however, we need to write code to manually emit each value as it becomes available. We achieve this by making calls to the emit() function and passing through as an argument the current value to be streamed. The following changes to our myFlow declaration implement a loop that emits the value of an incrementing counter. In addition, a 2-second delay is performed on each loop iteration to demonstrate the asynchronous nature of flow streams:
+
+Как только flow создан, следующим шагом является обеспечение передачи данных таким образом, чтобы они доходили до всех потребителей, наблюдающих за ними. Из трех построителей flow, которые мы рассмотрели в предыдущем разделе, только построители flowOf() и asFlow() создают flows, которые автоматически передают данные, как только потребитель начинает сбор. Однако в случае построителя flow нам нужно написать код, чтобы вручную передавать каждое значение по мере его поступления. Мы достигаем этого, вызывая функцию emit() и передавая в качестве аргумента текущее значение, которое будет передаваться потоком. Следующие изменения в нашем объявлении myFlow реализуют цикл, который выдает в поток значение увеличивающегося счетчика. Кроме того, на каждой итерации цикла выполняется задержка в 2 секунды, чтобы продемонстрировать асинхронную природу потоков flow:
+*/
+
+val myFlow: Flow<Int> = flow {
+  for (i in 0..9) {
+    emit(i)
+    delay(2000)
+  }
+}
+
+
+
+51.6 Collecting flow data as state
+----------------------------------
+
+/*
+As we will see later in the chapter, one way to collect data from a flow within a consumer is to call the collect() method on the flow instance. When working with Compose, however, a less flexible, but more convenient option is to convert the flow to state by calling the collectAsState() function on the flow instance. This allows us to treat the data just as we would any other state within our code. To see this in action, edit the MainActivity.kt file and make the following changes:
+
+Как мы увидим позже в этой главе, одним из способов сбора данных из flow внутри потребителя является вызов метода collect() в экземпляре потока. Однако при работе с Compose менее гибким, но более удобным вариантом является преобразование flow в состояние путем вызова функции collectAsState() в экземпляре flow. Это позволяет нам обрабатывать данные так же, как мы обрабатывали бы любое другое состояние в нашем коде. Чтобы увидеть это в действии, отредактируйте файл MainActivity.kt, внеся следующие изменения:
+*/
+.
+.
+import androidx.compose.runtime.*
+import kotlinx.coroutines.flow.*
+.
+.
+@Composable
+fun ScreenSetup(viewModel: DemoViewModel = viewModel()) {
+  MainScreen(viewModel.myFlow)
+}
+
+@Composable
+fun MainScreen(flow: Flow<Int>) {
+  val count by flow.collectAsState(initial = 0)
+}
+.
+.
+@Preview(showBackground = true)
+@Composable
+fun GreetingPreview() {
+  FlowDemoTheme {
+    ScreenSetup(viewModel())
+  }
+}
+
+/*
+The changes pass a myFlow reference to the MainScreen composable where it is converted to a State with an initial value of 0. Next, we need to design a simple user interface to display the count values as they are emitted to the flow:
+
+При изменениях ссылка на myFlow пердается в компонуемый элемент MainScreen, где она преобразуется в состояние с начальным значением 0. Далее нам нужно разработать простой пользовательский интерфейс для отображения значений count по мере их отправки в flow:
+*/
+.
+.
+import androidx.compose.foundation.layout.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.unit.sp
+.
+.
+@Composable
+fun MainScreen(myFlow: Flow<Int>) {
+  val count by myFlow.collectAsState(initial = 0)
+  Column(
+    modifier = Modifier.fillMaxSize(),
+    verticalArrangement = Arrangement.Center,
+    horizontalAlignment = Alignment.CenterHorizontally
+  ) {
+    Text(text = "$count", style = TextStyle(fontSize = 40.sp))
+  }
+}
+
+/*
+Try out the app either using the preview panel in interactive mode, or by running it on a device or emulator. Once the app starts, the count value displayed on the Text component should increment as the flow emits each new value.
+
+Протестируйте работу UI приложения либо с помощью панели предварительного просмотра в интерактивном режиме, либо запустив его на устройстве или эмуляторе. После запуска приложения значение count, отображаемое в текстовом компоненте, должно увеличиваться по мере того, как flow выдает каждое новое значение.
+*/
+
+
+
+51.7 Transforming data with intermediaries
+------------------------------------------
+
+/*
+In the previous example, we passed the data values to the consumer without any modifications. However, we can change the data between the producer and consumer by applying one or more intermediate flow operators. In this section, we will look at some of these operators.
+
+We can use the map() operator to convert the value to another value. For example, we can use map() to convert our integer value to a string and add some additional text. Edit the DemoViewModel.kt file and create a modified version of our flow as follows:
+
+
+В предыдущем примере мы передали значения данных потребителю без каких-либо изменений. Однако мы можем изменить данные между производителем и потребителем, применив один или несколько промежуточных операторов flow. В этом разделе мы рассмотрим некоторые из этих операторов.
+
+Мы можем использовать оператор map() для преобразования значения в другое значение. Например, мы можем использовать map() для преобразования нашего целочисленного значения в строку и добавления некоторого дополнительного текста. Отредактируйте файл DemoViewModel.kt и создайте измененную версию нашего flow следующим образом:
+*/
+.
+.
+class DemoViewModel : ViewModel() {
+  val myFlow: Flow<Int> = flow {
+    for (i in 0..9) {
+      emit(i)
+      delay(2000)
+    }
+  }
+  val newFlow = myFlow.map {
+    "Current value = $it"
+  }
+}
+
+/*
+Before we can test this operator, some changes are needed within the MainActivity.kt file to use this new flow:
+
+Прежде чем мы сможем протестировать этот оператор, необходимы некоторые изменения в файле MainActivity.kt, чтобы использовать этот новый flow:
+*/
+
+Composable
+fun ScreenSetup(viewModel: DemoViewModel = viewModel()) {
+  MainScreen(viewModel.newFlow)
+}
+
+@Composable
+fun MainScreen(flow: Flow<String>) {
+  val count by flow.collectAsState(initial = "Current value =")
+
+/*
+When the code is executed, the text will display the text string updated with the count:
+
+Когда код будет выполнен, отобразится текстовая строка, обновленная с учетом значения счетчика count:
+*/
+
+Current value = 1
+Current value = 2
+.
+.
+
+/*
+The map() operator will perform the conversion on every collected value. We can use the filter() operator to control which values get collected. The filter code block must contain an expression that returns a Boolean value. Only if the expression evaluates to true does the value pass through to the collection. For example, the following code filters odd numbers out of the data flow (note that we’ve left the map() operator in place to demonstrate the chaining of operators):
+
+Оператор map() выполнит преобразование для каждого собранного значения. Мы можем использовать оператор filter() для управления тем, какие значения будут собраны. Блок кода фильтра должен содержать выражение, возвращающее логическое значение. Только если выражение принимает значение true, значение передается в коллекцию. Например, следующий код отфильтровывает нечетные числа из потока данных (обратите внимание, что мы оставили оператор map() на месте, чтобы продемонстрировать цепочку операторов):
+*/
+
+val newFlow = myFlow
+  .filter {
+    it % 2 == 0
+  }
+  .map {
+    "Current value = $it"
+  }
+
+/*
+The above changes will display count updates only for even numbers.
+
+The transform() operator serves a similar purpose to map() but provides more flexibility. The transform() operator also needs to manually emit the modified result. A particular advantage of transform() is that it can emit multiple values, for example:
+
+
+Вышеуказанные изменения будут отображать обновления подсчета только для четных чисел.
+
+Оператор transform() служит той же цели, что и map(), но обеспечивает большую гибкость. Оператору transform() также необходимо вручную выдать измененный результат. Особое преимущество функции transform() заключается в том, что она может выдавать несколько значений, например:
+*/
+
+val newFlow = myFlow
+  .transform {
+    emit("Value = $it")
+    delay(1000)
+    val doubled = it * 2
+    emit("Value doubled = $doubled")
+  }
+  
+// Output
+Value = 0
+Value doubled = 0
+Value = 1
+Value doubled = 2
+Value = 2
+Value doubled = 4
+Value = 3
+.
+.
+/*
+Before moving to the next step, revert the newFlow declaration to its original form:
+
+Прежде чем перейти к следующему шагу, верните объявлению newFlow его исходную форму:
+*/
+
+val newFlow = myFlow.map {
+  "Current value = $it"
+}
+
+
+
+51.8 Collecting flow data
+-------------------------
+
+/*
+So far in this chapter, we have used the collectAsState() function to convert a flow to a State instance. Behind the scenes, this method uses the collect() function to initiate the data collection. Although collectAsState() works well most of the time, there will be situations where you may need to call collect(). In fact, collect() is just one of several so-called terminal flow operators that can be called directly to achieve results that aren’t possible using collectAsState().
+
+These operators are suspend functions so can only be called from within a coroutine scope. In the chapter entitled “Coroutines and LaunchedEffects in Jetpack Compose”, we looked at coroutines and explained how to use LaunchedEffect to execute asynchronous code safely from within a composable function. Once we have implemented the LaunchedEffect call, we still need the streamed values to be stored as state, so we also need a mutable state into which to store the latest value. Bringing these requirements together, modify the MainScreen function so that it reads as follows:
+
+
+До сих пор в этой главе мы использовали функцию collectAsState() для преобразования потока в экземпляр состояния. За кулисами этот метод использует функцию collect() для инициирования сбора данных. Хотя collectAsState() работает хорошо большую часть времени, могут возникнуть ситуации, когда вам может потребоваться вызвать collect(). На самом деле, collect() - это всего лишь один из нескольких так называемых операторов терминального потока, которые могут быть вызваны напрямую для достижения результатов, которые невозможны с помощью collectAsState().
+
+Эти операторы являются функциями приостановки, поэтому могут быть вызваны только из области действия сопрограммы. В главе “Сопрограммы и LaunchedEffects в Jetpack Compose”, мы рассмотрели сопрограммы и объяснили, как использовать LaunchedEffect для безопасного выполнения асинхронного кода внутри компонуемой функции. После того, как мы реализовали вызов LaunchedEffect, нам все еще нужно, чтобы передаваемые значения сохранялись в виде состояния, поэтому нам также нужно изменяемое состояние, в котором можно сохранять последнее значение. Объединив эти требования, измените функцию главного экрана таким образом, чтобы она выглядела следующим образом:
+*/
+
+@Composable
+fun MainScreen(flow: Flow<String>) {
+  var count by remember { mutableStateOf<String>("Current value =")}
+  LaunchedEffect(Unit) {
+    flow.collect {
+      count = it
+    }
+  }
+  Column(
+    modifier = Modifier.fillMaxSize(),
+.
+.
+
+/*
+Test the app and verify that the text component updates as expected. Now that we are using the collect() function we can begin to explore some options that were not available to us when we were using collectAsState(). For example, to add code to be executed when the stream ends, the collection can be performed in a try/finally construct, for example:
+
+Протестируйте приложение и убедитесь, что текстовый компонент обновляется должным образом. Теперь, когда мы используем функцию collect(), мы можем начать изучать некоторые параметры, которые были нам недоступны, когда мы использовали collectAsState(). Например, чтобы добавить код, который будет выполняться при завершении потока, сбор может быть выполнен в конструкции try/finally, например:
+*/
+
+LaunchedEffect(Unit) {
+  try {
+    flow.collect {
+      count = it
+    }
+  } finally {
+    count = "Flow stream ended."
+  }
+}
+
+/*
+The collect() operator will collect every value emitted by the producer, even if new values are emitted while the last value is still being processed in the consumer. For example, our producer is configured to emit a new value every two seconds. Suppose, however, that we simulate our consumer taking 2.5 seconds to process each collected value. When executed, we will still see all of the values listed in the output because collect() does not discard any uncollected values regardless of whether more recent values have been emitted since the last collection. This type of behavior is essential to avoid data loss within the flow. In some situations, however, the consumer may be uninterested in any intermediate values emitted between the most recently processed value and the latest emitted value. In this case, the collectLatest() operator can be called on the flow instance. This operator works by canceling the current collection if a new value arrives before processing completes on the previous value and restarts the process on the latest value.
+
+The conflate() operator is similar to the collectLatest() operator except that instead of canceling the current collection operation when a new value arrives, conflate() allows the current operation to complete, but discards intermediate values that arrive during this process. When the current operation completes, the most recent value is then collected.
+
+Another collection operator is the single() operator. This operator collects a single value from the flow and throws an exception if it finds another value in the stream. This operator is useful where the appearance of a second stream value indicates that something else has gone wrong somewhere in the app or data source.
+
+
+
+Оператор collect() будет собирать каждое значение, выданное производителем, даже если новые значения выдаются, пока последнее значение все еще обрабатывается в потребителе. Например, наш производитель настроен на выдачу нового значения каждые две секунды. Предположим, однако, что мы моделируем, что нашему потребителю требуется 2,5 секунды для обработки каждого собранного значения. При выполнении мы по-прежнему увидим все значения, перечисленные в выходных данных, потому что collect() не отбрасывает никакие несобранные значения, независимо от того, были ли получены более свежие значения с момента последнего сбора. Такой тип поведения необходим для предотвращения потери данных в потоке. Однако в некоторых ситуациях потребитель может быть не заинтересован в каких-либо промежуточных значениях, передаваемых между самым последним обработанным значением и последним переданным значением. В этом случае в экземпляре потока может быть вызван оператор collectLatest(). Этот оператор работает путем отмены текущей коллекции, если новое значение поступает до завершения обработки предыдущего значения, и перезапускает процесс для последнего значения.
+
+Оператор conflate() аналогичен оператору collectLatest(), за исключением того, что вместо отмены текущей операции сбора при поступлении нового значения, conflate() позволяет завершить текущую операцию, но отбрасывает промежуточные значения, поступающие во время этого процесса. Когда текущая операция завершается, затем собирается самое последнее значение.
+
+Другим оператором сбора данных является оператор single(). Этот оператор собирает одно значение из потока и генерирует исключение, если находит другое значение в потоке. Этот оператор полезен, когда появление второго значения потока указывает на то, что что-то еще пошло не так где-то в приложении или источнике данных.
+*/
+
+
+
+51.9 Adding a flow buffer
+-------------------------
+
+/*
+When a consumer takes time to process the values emitted by a producer, there is the potential for execution time inefficiencies to occur. Suppose, for example, that in addition to the two-second delay between each emission from our newFlow producer, the collection process in our consumer takes an additional second to complete. We can simulate this behavior as follows:
+
+Когда потребителю требуется время для обработки значений, переданных производителем, существует потенциальная возможность неэффективного использования времени выполнения. Предположим, например, что в дополнение к двухсекундной задержке между каждым выбросом данных от нашего нового производителя потока, процесс сбора в нашем потребителе занимает дополнительную секунду для завершения. Мы можем смоделировать это поведение следующим образом:
+*/
+.
+.
+import kotlin.system.measureTimeMillis
+import kotlinx.coroutines.delay
+.
+.
+LaunchedEffect(Unit) {
+  val elapsedTime = measureTimeMillis {
+    flow.collect {
+      count = it
+      delay(1000)
+    }
+  }
+  count = "Duration = $elapsedTime"
+}
+
+/*
+To allow us to measure the total time to fully process the flow, the consumer code has been placed in the closure of a call to the Kotlin measureTimeMillis() function. Run the app and, after execution completes, a duration similar to the following will be reported:
+
+Чтобы мы могли измерить общее время для полной обработки потока, код потребителя был помещен в завершение вызова функции Kotlin measureTimeMillis(). Запустите приложение, и после завершения выполнения будет сообщено о продолжительности, аналогичной приведенной ниже:
+*/
+
+Duration = 30044
+
+/*
+This accounts for approximately 20 seconds to process the 10 values within newFlow and an additional 10 seconds for those values to be collected. There is an inefficiency here because the producer is waiting for the consumer to process each value before starting on the next value. This would be much more efficient if the producer did not have to wait for the consumer. We could, of course, use the collectLatest() or conflate() operators, but only if the loss of intermediate values is not a concern. To speed up the processing while also collecting every emitted value we can make use of the buffer() operator. This operator buffers values as they are emitted and passes them to the consumer when it is ready to receive them. This allows the producer to continue emitting values while the consumer processes preceding values while ensuring that every emitted value is collected. The buffer() operator may be applied to a flow as follows:
+
+Обработка 10 значений в новом потоке составляет приблизительно 20 секунд и еще 10 секунд для сбора этих значений. Работа в коде выполняется не эффективно, поскольку производитель ожидает, пока потребитель обработает каждое значение, прежде чем приступить к следующему значению. Было бы намного эффективнее, если бы производителю не приходилось ждать потребителя. Мы могли бы, конечно, использовать операторы collectLatest() или conflate(), но только в том случае, если потеря промежуточных значений не вызывает беспокойства. Чтобы ускорить обработку, одновременно собирая каждое отправленное значение, мы можем использовать оператор buffer(). Этот оператор буферизует значения по мере их отправки и передает их потребителю, когда он готов их получить. Это позволяет производителю продолжать выдавать значения, в то время как потребитель обрабатывает предыдущие значения, гарантируя, что каждое передаваемое значение будет собрано. Оператор buffer() может быть применен к потоку следующим образом:
+*/
+
+LaunchedEffect("Unit") {
+  val elapsedTime = measureTimeMillis {
+    flow
+      .buffer()
+      .collect {
+        count = it
+        delay(1000)
+      }
+  }
+  count = "Duration = $elapsedTime"
+}
+
+/*
+Execution of the above code indicates that we have now reclaimed the 10 seconds previously lost in the collection code:
+
+Выполнение приведенного выше кода указывает на то, что теперь мы сэкономили 10 секунд, по сравнению с предыдущей реализацией кода:
+*/
+
+Duration = 20052
+
+
+
+51.10 More terminal flow operators
+----------------------------------
+
+/*
+The reduce() operator is one of several other terminal flow operators that can be used in place of a collection operator to make changes to the flow data. The reduce() operator takes two parameters in the form of an accumulator and a value. The first flow value is placed in the accumulator and a specified operation is performed between the accumulator and the current value (with the result stored in the accumulator). To try this out we need to revert to using myFlow instead of newFlow in addition to adding the reduce() operator call:
+
+Оператор reduce() является еще одним терминальным оператором потока flow, которые могут использоваться вместо оператора сбора для внесения изменений в данные потока. Оператор reduce() принимает два параметра в виде аккумулятора и значения. Первое значение расхода помещается в аккумулятор, и выполняется указанная операция между аккумулятором и текущим значением (с сохранением результата в аккумуляторе). Чтобы опробовать это, нам помимо вызова оператора reduce() нужно вернуться к использованию myFlow вместо newFlow:
+*/
+
+@Composable
+fun ScreenSetup(viewModel: DemoViewModel = viewModel()) {
+  MainScreen(viewModel.myFlow)
+}
+
+@Composable
+fun MainScreen(flow: Flow<Int>) {
+  var count by remember { mutableStateOf<Int>(0) }
+  LaunchedEffect(Unit) {
+    flow
+      .reduce { accumulator, value ->
+        count = accumulator
+        accumulator + value
+      }
+  }
+}
+.
+.
+/*
+The fold() operator works similarly to the reduce() operator, with the exception that it is passed an initial accumulator value:
+
+Оператор fold() работает аналогично оператору reduce(), за исключением того, что ему передается начальное значение аккумулятора:
+*/
+.
+.
+LaunchedEffect(Unit) {
+  flow
+    .fold(10) { accumulator, value ->
+      count = accumulator
+      accumulator + value
+    }
+}
+.
+.
+
+
+
+51.11 Flow flattening (Выравнивание потока)
+---------------------
+
+/*
+As we have seen in earlier examples, we can use operators to perform tasks on values collected from a flow. An interesting situation occurs, however, when that task itself creates one or more flows resulting in a “flow of flows”. In situations where this occurs, these streams can be flattened into a single stream. Consider the following example code which declares two flows:
+
+Как мы видели в предыдущих примерах, мы можем использовать операторы для выполнения задач над значениями, полученными из потока. Однако возникает интересная ситуация, когда эта задача сама создает один или несколько потоков, что приводит к “потоку потоков”. В ситуациях, когда это происходит, эти потоки могут быть сведены в один поток. Рассмотрим следующий пример кода, который объявляет два потока:
+*/
+
+val myFlow: Flow<Int> = flow {
+  for (i in 1..5) {
+    delay(1000)
+    emit(i)
+  }
+}
+
+fun doubleIt(value: Int) = flow {
+  emit(value)
+  delay(1000)
+  emit(value + value)
+}
+
+/*
+If we were to call doubleIt() for each value in the myFlow stream we would end up with a separate flow for each value. This problem can be solved by concatenating the doubleIt() streams into a single flow using the flatMapConcat() operator as follows:
+
+Если бы мы вызвали doubleIt() для каждого значения в потоке myFlow, мы бы в конечном итоге получили отдельный поток для каждого значения. Эта проблема может быть решена путем объединения потоков doubleIt() в один поток с помощью оператора flatMapConcat() следующим образом:
+*/
+
+@Composable
+fun ScreenSetup(viewModel: DemoViewModel = viewModel()) {
+  MainScreen(viewModel)
+}
+
+@Composable
+fun MainScreen(viewModel: DemoViewModel) {
+  var count by remember { mutableStateOf<Int>(0)}
+  LaunchedEffect(Unit) {
+    viewModel.myFlow
+      .flatMapConcat { viewModel.doubleIt(it) }
+      .collect { count = it }
+  }
+.
+.
+/*
+When this modified code executes we will see the following output from the collect() operator:
+
+Когда этот измененный код будет выполнен, мы увидим следующий вывод оператора collect():
+*/
+
+1
+2
+2
+4
+3
+6
+4
+8
+5
+10
+
+/*
+As we can see from the output, the doubleIt() flow has emitted the value provided by myFlow followed by the doubled value. When using the flatMapConcat() operator, the doubleIt() calls are being performed synchronously, causing execution to wait until doubleIt() has emitted both values before processing the next flow value. The emitted values can instead be collected asynchronously using the flatMapMerge() operator as follows:
+
+Как мы можем видеть из выходных данных, поток doubleIt() выдал значение, предоставленное myFlow, за которым следует удвоенное значение. При использовании оператора flatMapConcat() вызовы doubleIt() выполняются синхронно, заставляя выполнение ждать, пока doubleIt() не выдаст оба значения, прежде чем обрабатывать следующее значение потока. Вместо этого передаваемые значения могут быть собраны асинхронно с помощью оператора flatMapMerge() следующим образом:
+*/
+
+viewModel.myFlow
+  .flatMapMerge { viewModel.doubleIt(it) }
+  .collect {
+    count = it
+    println("Count = $it")
+  }
+}
+
+/*
+Because the collection is being performed asynchronously the displayed value change too quickly to see all of the count values. Display the Logcat tool window to see the full list of collected values generated by the println() call:
+
+Поскольку сбор выполняется асинхронно, отображаемое значение меняется слишком быстро, чтобы увидеть все значения счетчика. Откройте окно инструмента Logcat, чтобы увидеть полный список собранных значений, сгенерированных вызовом println():
+*/
+
+I/System.out: Count = 1
+I/System.out: Count = 2
+I/System.out: Count = 2
+I/System.out: Count = 4
+I/System.out: Count = 3
+I/System.out: Count = 6
+I/System.out: Count = 4
+I/System.out: Count = 8
+I/System.out: Count = 5
+I/System.out: Count = 10
+
+
+
+51.12 Combining multiple flows
+------------------------------
+
+/*
+Multiple flows can be combined into a single flow using the zip() and combine() operators. The following code demonstrates the zip() operator being used to convert two flows into a single flow:
+
+Несколько потоков могут быть объединены в один поток с помощью операторов zip() и combine(). Следующий код демонстрирует оператор zip(), используемый для преобразования двух потоков в один поток:
+*/
+
+var count by remember { mutableStateOf<String>("")}
+
+LaunchedEffect(Unit) {
+  val flow1 = (1..5).asFlow()
+    .onEach { delay(1000) }
+  val flow2 = flowOf("one", "two", "three", "four")
+    .onEach { delay(1500) }
+  flow1.zip(flow2) { value, string -> "$value, $string" }
+    .collect { count = it }
+}
+
+// Output
+1, one
+2, two
+3, three
+4, four
+
+/*
+Note that we have applied the onEach() operator to both flows in the above code. This is a useful operator for performing a task on receipt of each stream value.
+
+The zip() operator will wait until both flows have emitted a new value before performing the collection. The combine() operator works slightly differently in that it proceeds as soon as either flow emits a new value, using the last value emitted by the other flow in the absence of a new value:
+
+
+Обратите внимание, что мы применили оператор onEach() к обоим потокам в приведенном выше коде. Это полезный оператор для выполнения задачи при получении значения каждого потока.
+
+Оператор zip() будет ждать, пока оба потока не выдадут новое значение, прежде чем выполнять сбор. Оператор combine() работает немного по-другому в том смысле, что он выполняется, как только любой поток выдает новое значение, используя последнее значение, выданное другим потоком, в отсутствие нового значения:
+*/
+.
+.
+val flow1 = (1..5).asFlow()
+  .onEach { delay(1000) }
+val flow2 = flowOf("one", "two", "three", "four")
+  .onEach { delay(1500) }
+flow1.combine(flow2) { value, string -> "$value, $string" }
+  .collect { count = it }
+.
+.
+// Output
+1, one
+2, one
+3, one
+3, two
+4, two
+4, three
+5, three
+5, four
+
+/*
+As we can see from the output, multiple instances have occurred where the last value has been reused on a flow because a new value was emitted on the other.
+
+Как мы можем видеть из выходных данных, имело место несколько случаев, когда последнее значение было повторно использовано в потоке, потому что в другом потоке было выдано новое значение.
+*/
+
+
+
+51.13 Hot and cold flows
+------------------------
+
+/*
+So far in this chapter, we have looked exclusively at the Kotlin Flow type. Kotlin also provides additional types in the form of StateFlow and SharedFlow. Before exploring these, however, it is important to understand the concept of hot and cold flows.
+
+A stream declared using the Flow type is referred to as a cold flow because the code within the producer does not begin executing until a consumer begins collecting values. StateFlow and SharedFlow, on the other hand, are referred to as hot flows because they begin emitting values immediately, regardless of whether any consumers are collecting the values.
+
+Once a consumer begins collecting from a hot flow, it will receive the latest value emitted by the producer followed by any subsequent values. Unless steps are taken to implement caching, any previous values emitted before the collection starts will be lost.
+
+Another important difference between Flow, StateFlow, and SharedFlow is that a Flow-based stream cannot have multiple collectors. Each Flow collector launches a new flow with its own independent data stream. With StateFlow and SharedFlow, on the other hand, multiple collectors share access to the same flow.
+
+
+
+До сих пор в этой главе мы рассматривали исключительно тип Kotlin Flow. Kotlin также предоставляет дополнительные типы в виде StateFlow и SharedFlow. Однако, прежде чем изучать их, важно понять концепцию горячего и холодного потоков.
+
+Поток, объявленный с использованием типа Flow, называется холодным потоком, поскольку код внутри производителя не начинает выполняться до тех пор, пока потребитель не начнет собирать значения. StateFlow и SharedFlow, с другой стороны, называются горячими потоками, поскольку они начинают выдавать значения немедленно, независимо от того, собирают ли эти значения какие-либо потребители.
+
+Как только потребитель начнет сбор данных из горячего потока, он получит последнее значение, отправленное производителем, за которым последуют все последующие значения. Если не будут предприняты шаги по реализации кэширования, все предыдущие значения, отправленные до начала сбора, будут потеряны.
+
+Другое важное различие между Flow, StateFlow и SharedFlow заключается в том, что Flow-поток не может иметь нескольких сборщиков. Каждый сборщик потока запускает новый поток со своим собственным независимым потоком данных. С другой стороны, при использовании StateFlow и SharedFlow несколько сборщиков совместно используют доступ к одному и тому же потоку.
+*/
+
+
+
+51.14 StateFlow
+---------------
+
+/*
+StateFlow, as the name suggests, is primarily used as a way to observe a change in state within an app such as the current setting of a counter, toggle button, or slider. Each StateFlow instance is used to store a single value that is likely to change over time and to notify all consumers when those changes occur. This enables you to write code that reacts to changes in state instead of code that has to continually check whether or not a state value has changed. StateFlow behaves the same way as LiveData with the exception that LiveData has lifecycle awareness and does not require an initial value (LiveData was covered previously in the chapter titled “Working with ViewModels in Compose”).
+
+To create a StateFlow stream, begin by creating an instance of MutableStateFlow, passing through a mandatory initial value. This is the variable that will be used to change the current state value from within the app code:
+
+
+StateFlow, как следует из названия, в основном используется как способ наблюдения за изменением состояния внутри приложения, таким как текущая настройка счетчика, кнопки переключения или ползунка. Каждый экземпляр StateFlow используется для хранения единственного значения, которое, вероятно, будет меняться с течением времени, и для уведомления всех потребителей о возникновении этих изменений. Это позволяет вам писать код, который реагирует на изменения состояния, вместо кода, который должен постоянно проверять, изменилось ли значение состояния. StateFlow ведет себя так же, как LiveData, за исключением того, что LiveData осведомлена о жизненном цикле и не требует начального значения (LiveData была рассмотрена ранее в главе под названием “Работа с ViewModels в Compose”).
+
+Чтобы создать поток StateFlow, начните с создания экземпляра MutableStateFlow, передавая обязательное начальное значение. Это переменная, которая будет использоваться для изменения текущего значения состояния из кода приложения:
+*/
+
+private val _stateFlow = MutableStateFlow(0)
+
+/*
+Next, call asStateFlow() on the MutableStateFlow instance to convert it into a StateFlow from which changes in state can be collected:
+
+Затем вызовите asStateFlow() для экземпляра MutableStateFlow, чтобы преобразовать его в StateFlow, из которого можно собирать изменения состояния:
+*/
+
+val stateFlow = _stateFlow.asStateFlow()
+
+/*
+Once created, any changes to the state are made via the value property of the mutable state instance. The following code, for example, increments the state value:
+
+После создания любые изменения состояния вносятся через свойство value экземпляра изменяемого состояния. Следующий код, например, увеличивает значение состояния:
+*/
+
+_stateFlow.value += 1
+
+/*
+Once the flow is active, the state can be consumed using collectAsState() or directly using a collection function, though it is generally recommended to collect from StateFlow using the collectLatest() operator. To try out an example, begin by making the following modifications to the DemoViewModel.kt file:
+
+Как только поток активен, состояние может быть использовано с помощью collectAsState() или непосредственно с помощью функции сбора, хотя обычно рекомендуется собирать данные из StateFlow с помощью оператора collectLatest(). Чтобы опробовать пример, начните с внесения следующих изменений в файл DemoViewModel.kt:
+*/
+.
+.
+class DemoViewModel : ViewModel() {
+  private val _stateFlow = MutableStateFlow(0)
+  val stateFlow = _stateFlow.asStateFlow()
+
+  fun increaseValue() {
+    _stateFlow.value += 1
+  }
+.
+.
+
+/*
+Next, edit the MainActivity.kt file and change MainScreen so that it collects from the new state flow and to add a button configured to call the view model increaseValue() function:
+
+Затем отредактируйте файл MainActivity.kt и измените MainScreen так, чтобы он собирал данные из нового потока состояний, и добавьте кнопку, настроенную для вызова функции модели представления increaseValue():
+*/
+.
+.
+import androidx.compose.material3.Button
+.
+.
+
+
+@Composable
+fun MainScreen(viewModel: DemoViewModel) {
+  val count by viewModel.stateFlow.collectAsState()
+  Column(
+    modifier = Modifier.fillMaxSize(),
+    verticalArrangement = Arrangement.Center,
+    horizontalAlignment = Alignment.CenterHorizontally
+  ) {
+    Text(text = "$count", style = TextStyle(fontSize = 40.sp))
+    Button(onClick = { viewModel.increaseValue() }) {
+      Text("Click Me")
+    }
+  }
+}
+
+/*
+Run the app and verify that the button updates the count Text component with the incremented count value each time it is clicked.
+
+Запустите приложение и убедитесь, что кнопка обновляет текстовый компонент count с увеличенным значением count при каждом нажатии на нее.
+*/
+
+
+
+51.15 SharedFlow
+----------------
+
+/*
+SharedFlow provides a more general-purpose streaming option than that offered by StateFlow. Some of the key differences between StateFlow and SharedFlow are as follows:
+• Consumers are generally referred to as subscribers.
+• An initial value is not provided when creating a SharedFlow instance.
+• SharedFlow allows values that were emitted prior to collection starting to be “replayed” to the collector.
+• SharedFlow emits values instead of using a value property.
+
+SharedFlow instances are created using MutableSharedFlow as the backing property on which we call the asSharedFlow() function to obtain a SharedFlow reference. For example, make the following changes to the DemoViewModel class to declare a shared flow:
+
+
+Shared Flow предоставляет более универсальный вариант потоковой передачи, чем тот, который предлагается StateFlow. Некоторые из ключевых различий между StateFlow и Shared Flow заключаются в следующем:
+• Consumers (Потребители) - обычно называются подписчиками (subscribers).
+• Начальное значение не предоставляется при создании экземпляра SharedFlow.
+• SharedFlow позволяет “воспроизводить” значения, которые были отправлены до начала сбора.
+• SharedFlow выдает значения в поток вместо использования свойства value.
+
+Экземпляры SharedFlow создаются с использованием MutableSharedFlow в качестве теневого свойства (backing property), для которого мы вызываем функцию asSharedFlow() для получения ссылки на SharedFlow. Например, внесите следующие изменения в класс DemoViewModel, чтобы объявить общий поток:
+*/
+.
+.
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.channels.BufferOverflow
+.
+.
+class DemoViewModel : ViewModel() {
+  private val _sharedFlow = MutableSharedFlow<Int>(
+    replay = 10,
+    onBufferOverflow = BufferOverflow.DROP_OLDEST
+  )
+  val sharedFlow = _sharedFlow.asSharedFlow()
+.
+.
+
+/*
+As configured above, new flow subscribers will receive the last 10 values before receiving any new values. The above flow is also configured to discard the oldest value when more than 10 values are buffered. The full set of options for handling buffer overflows are as follows:
+• DROP_LATEST - The latest value is dropped when the buffer is full leaving the buffer unchanged as new values are processed.
+• DROP_OLDEST - Treats the buffer as a “first-in, first-out” stack where the oldest value is dropped to make room for a new value when the buffer is full.
+• SUSPEND - The flow is suspended when the buffer is full.
+
+Values are emitted on a SharedFlow stream by calling the emit() method of the MutableSharedFlow instance from within a coroutine. Remaining in the DemoViewModel.kt file, add a new method that can be called from the main activity to start the shared flow:
+
+
+Как указано выше, новые подписчики потока будут получать последние 10 значений перед получением любых новых значений. Указанный выше поток также настроен на удаление самого старого значения при буферизации более 10 значений. Полный набор опций для обработки переполнения буфера следующий:
+• DROP_LATEST - Последнее значение удаляется при заполнении буфера, оставляя буфер неизменным при обработке новых значений.
+• DROP_OLDEST - Обрабатывает буфер как стек “первый вход, первый выход”, где самое старое значение удаляется, чтобы освободить место для нового значения, когда буфер заполнен.
+• SUSPEND - поток приостанавливается, когда буфер заполняется.
+
+Значения передаются в поток SharedFlow путем вызова метода emit() экземпляра MutableSharedFlow из сопрограммы. Оставаясь в файле DemoViewModel.kt, добавьте новый метод, который можно вызвать из главной активити, чтобы запустить общий поток:
+*/
+
+fun startSharedFlow() {
+  viewModelScope.launch {
+    for (i in 1..5) {
+      _sharedFlow.emit(i)
+      delay(2000)
+    }
+  }
+}
+
+/*
+Finally, make the following changes to the MainScreen composable:
+
+Наконец, внесите следующие изменения в компонуемый элемент MainScreen:
+*/
+
+@Composable
+fun MainScreen(viewModel: DemoViewModel) {
+  val count by viewModel.sharedFlow.collectAsState(initial = 0)
+  Column(
+    modifier = Modifier.fillMaxSize(),
+    verticalArrangement = Arrangement.Center,
+    horizontalAlignment = Alignment.CenterHorizontally
+  ) {
+    Text(text = "$count", style = TextStyle(fontSize = 40.sp))
+    Button(onClick = { viewModel.startSharedFlow() }) {
+      Text("Click Me")
+    }
+  }
+}
+
+/*
+Run the app on a device or emulator (shared flow code does not always work in the interactive preview) and verify that clicking the button causes the count to begin updating. Note that since new values are being emitted from within a coroutine you can click on the button repeatedly and collect values from multiple flows. One final point to note about shared flows is that the current number of subscribers to a SharedFlow stream can be obtained via the subscriptionCount property of the mutable instance:
+
+Запустите приложение на устройстве или эмуляторе (общий код потока не всегда работает в интерактивном предварительном просмотре) и убедитесь, что нажатие кнопки приводит к началу обновления счетчика. Обратите внимание, что поскольку новые значения генерируются из сопрограммы, вы можете нажимать на кнопку несколько раз и собирать значения из нескольких потоков. Последний момент, на который следует обратить внимание в отношении общих недостатков, заключается в том, что текущее количество подписчиков на общий поток потока может быть получено с помощью свойства subscriptionCount изменяемого экземпляра:
+*/
+
+val subCount = _sharedFlow.subscriptionCount
+
+
+
+51.16 Converting a flow from cold to hot
+----------------------------------------
+
+/*
+A cold flow can be made hot by calling the shareIn() function on the flow. This call requires a coroutine scope in which to execute the flow, a replay value, and a start policy setting indicating the conditions under which the flow is to start and stop. The available start policy options are as follows:
+• SharingStarted.WhileSubscribed() - The flow is kept alive as long as it has active subscribers.
+• SharingStarted.Eagerly() - The flow begins immediately and remains active even in the absence of active subscribers.
+• SharingStarted.Lazily() - The flow begins only after the first consumer subscribes and remains active even in the absence of active subscribers.
+
+We could, for example, make one of our earlier cold flows hot using the following code:
+
+
+Холодный поток можно сделать горячим, вызвав функцию shareIn() в потоке. Для этого вызова требуется область действия сопрограммы, в которой выполняется поток, значение воспроизведения и параметр политики запуска, указывающий условия, при которых поток должен запускаться и останавливаться. Доступные параметры политики запуска следующие:
+• SharingStarted.WhileSubscribed() - Поток поддерживается в рабочем состоянии, пока у него есть активные подписчики.
+• SharingStarted.Eagerly() - Поток начинается немедленно и остается активным даже при отсутствии активных подписчиков.
+• SharingStarted.Lazily() - Поток начинается только после подписки первого пользователя и остается активным даже при отсутствии активных подписчиков.
+
+Мы могли бы, например, сделать один из наших предыдущих холодных потоков горячим, используя следующий код:
+*/
+
+val hotFlow = myFlow.shareIn(
+  viewModelScope,
+  replay = 1,
+  started = SharingStarted.WhileSubscribed()
+)
+
+
+
+51.17 Summary
+-------------
+
+/*
+Kotlin flows allow sequential data or state changes to be returned over time from asynchronous tasks. A flow consists of a producer that emits a sequence of values and consumers that collect and process those values. The flow stream can be manipulated between the producer and consumer by applying one or more intermediary operators including transformations and filtering. Flows are created based on the Flow, StateFlow, and SharedFlow types. A Flow-based stream can only have a single collector while StateFlow and SharedFlow can have multiple collectors.
+
+Flows are categorized as being hot or cold. A cold flow does not begin emitting values until a consumer begins collection. Hot flows, on the other hand, begin emitting values as soon as they are created, regardless of whether or not the values are being collected. In the case of SharedFlow, a predefined number of values may be buffered and subsequently replayed to new subscribers when they begin collecting values. A cold flow can be made hot via a call to the flow’s shareIn() function.
+
+
+Потоки Kotlin позволяют возвращать последовательные данные или изменения состояния с течением времени из асинхронных задач. Поток состоит из производителя, который выдает последовательность значений, и потребителей, которые собирают и обрабатывают эти значения. Потоком flow можно управлять между производителем и потребителем, применяя один или несколько промежуточных операторов, включая преобразования и фильтрацию. Потоки создаются на основе типов Flow, StateFlow и SharedFlow. Поток, основанный на Flow, может иметь только один коллектор, в то время как StateFlow и SharedFlow могут иметь несколько коллекторов.
+
+Потоки классифицируются как горячие или холодные. Холодный поток не начинает выдавать значения до тех пор, пока потребитель не начнет сбор. Горячие потоки, с другой стороны, начинают выдавать значения сразу после их создания, независимо от того, собираются значения или нет. В случае SharedFlow предопределенное количество значений может быть буферизовано и впоследствии воспроизведено новым подписчикам, когда они начнут собирать значения. Холодный поток можно сделать горячим с помощью вызова функции shareIn() потока.
+*/
